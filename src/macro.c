@@ -20,6 +20,7 @@
 #include "root.h"
 
 #include "macro.h"
+#include "mars.h"
 
 int isIdStart(unsigned char *p);
 int isIdTail(unsigned char *p);
@@ -435,6 +436,12 @@ void Macro::expand(OutBuffer *buf, size_t start, size_t *pend,
                 }
                 else
                 {
+                    if (global.params.warnings && !global.gag)
+                    {
+                        fprintf(stderr, "Ddoc: Undefined macro '%.*s'.\n", namelen, name);
+                        // prevent repeated warnings for name
+                        define(&this->next, memdup(name, namelen), namelen, NULL, 0);
+                    }
                     // Replace $(NAME) with nothing
                     buf->remove(u, v + 1 - u);
                     end -= (v + 1 - u);
