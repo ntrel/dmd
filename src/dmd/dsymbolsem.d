@@ -4650,6 +4650,13 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
             for (size_t i = 0; i < idec.baseclasses.dim;)
             {
                 auto b = (*idec.baseclasses)[i];
+                Identifier tid;
+                if (b.type.ty == Tident &&
+                    (tid = (cast(TypeIdentifier)b.type).ident == Id.This || tid == Id.Super))
+                {
+                    error("base type must be class or interface, not '%s'. Did you mean to use 'typeof(%s)'?",
+                          b.type.toChars(), tid.toChars());
+                }
                 b.type = resolveBase(b.type.typeSemantic(idec.loc, sc));
 
                 Type tb = b.type.toBasetype();
