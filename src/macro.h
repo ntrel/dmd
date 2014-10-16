@@ -20,10 +20,12 @@
 #include "root.h"
 
 
+struct AA;
+
 struct Macro
 {
   private:
-    Macro *next;                // next in list
+    static AA *hashTable;       // for name -> Macro lookup
 
     const utf8_t *name;        // macro name
     size_t namelen;             // length of macro name

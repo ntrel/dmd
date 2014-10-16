@@ -22,6 +22,10 @@
 #include "root.h"
 
 #include "macro.h"
+#include "lexer.h"
+#include "aav.h"
+
+static AA *Macro::hashTable = NULL;
 
 int isIdStart(const utf8_t *p);
 int isIdTail(const utf8_t *p);
@@ -34,62 +38,47 @@ utf8_t *memdup(const utf8_t *p, size_t len)
 
 Macro::Macro(const utf8_t *name, size_t namelen, const utf8_t *text, size_t textlen)
 {
-    next = NULL;
-
-#if 1
     this->name = name;
     this->namelen = namelen;
 
     this->text = text;
     this->textlen = textlen;
-#else
-    this->name = name;
-    this->namelen = namelen;
 
-    this->text = text;
-    this->textlen = textlen;
-#endif
     inuse = 0;
 }
 
 
-Macro *Macro::search(const utf8_t *name, size_t namelen)
-{   Macro *table;
-
-    //printf("Macro::search(%.*s)\n", namelen, name);
-    for (table = this; table; table = table->next)
-    {
-        if (table->namelen == namelen &&
-            memcmp(table->name, name, namelen) == 0)
-        {
-            //printf("\tfound %d\n", table->textlen);
-            break;
-        }
-    }
-    return table;
+static Identifier *getIdent(const utf8_t *name, size_t namelen)
+{   static OutBuffer buf;
+    
+    buf.reset();
+    buf.write(name, namelen);
+    return Lexer::idPool(buf.peekString());
 }
+
+
+Macro *Macro::search(const utf8_t *name, size_t namelen)
+{
+    Identifier *ident = getIdent(name, namelen);
+    return (Macro*)dmd_aaGetRvalue(hashTable, ident);
+}
+
 
 Macro *Macro::define(Macro **ptable, const utf8_t *name, size_t namelen, const utf8_t *text, size_t textlen)
 {
     //printf("Macro::define('%.*s' = '%.*s')\n", namelen, name, textlen, text);
 
-    Macro *table;
-
-    //assert(ptable);
-    for (table = *ptable; table; table = table->next)
+    Macro **pm;
+    pm = (Macro**)dmd_aaGet(&hashTable, getIdent(name, namelen));
+    if (*pm)
     {
-        if (table->namelen == namelen &&
-            memcmp(table->name, name, namelen) == 0)
-        {
-            table->text = text;
-            table->textlen = textlen;
-            return table;
-        }
+        (*pm)->text = text;
+        (*pm)->textlen = textlen;
+        return *pm;
     }
-    table = new Macro(name, namelen, text, textlen);
-    table->next = *ptable;
-    *ptable = table;
-    return table;
+    *pm = new Macro(name, namelen, text, textlen);
+    *ptable = *pm;
+    return *pm;
 }
 
 /**********************************************************
