@@ -2537,9 +2537,10 @@ extern (C++) FuncDeclaration resolveFuncCall(Loc loc, Scope* sc, Dsymbol s,
     {
         if (td && !fd) // all of overloads are templates
         {
-            .error(loc, "%s %s.%s cannot deduce function from argument types !(%s)%s, candidates are:",
+            .error(loc, "%s %s.%s cannot deduce function from argument types !(%s)%s",
                 td.kind(), td.parent.toPrettyChars(), td.ident.toChars(),
                 tiargsBuf.peekString(), fargsBuf.peekString());
+            .errorSupplemental(loc, "Candidates are:");
 
             // Display candidate templates (even if there are no multiple overloads)
             int numToDisplay = numOverloadsDisplay;
@@ -2579,8 +2580,9 @@ extern (C++) FuncDeclaration resolveFuncCall(Loc loc, Scope* sc, Dsymbol s,
                 MODMatchToBuffer(&funcBuf, tf.mod, tthis.mod);
                 if (hasOverloads)
                 {
-                    .error(loc, "none of the overloads of '%s' are callable using a %sobject, candidates are:",
+                    .error(loc, "none of the overloads of '%s' are callable using a %sobject",
                         fd.ident.toChars(), thisBuf.peekString());
+                    .errorSupplemental(loc, "Candidates are:");
                 }
                 else
                 {
@@ -2594,8 +2596,9 @@ extern (C++) FuncDeclaration resolveFuncCall(Loc loc, Scope* sc, Dsymbol s,
                 //printf("tf = %s, args = %s\n", tf.deco, (*fargs)[0].type.deco);
                 if (hasOverloads)
                 {
-                    .error(loc, "none of the overloads of '%s' are callable using argument types %s, candidates are:",
+                    .error(loc, "none of the overloads of '%s' are callable using argument types %s",
                         fd.ident.toChars(), fargsBuf.peekString());
+                    .errorSupplemental(loc, "Candidates are:");
                 }
                 else
                 {
