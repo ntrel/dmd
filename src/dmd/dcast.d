@@ -3460,7 +3460,8 @@ extern (C++) bool arrayTypeCompatible(Loc loc, Type t1, Type t2)
     {
         if (t1.nextOf().implicitConvTo(t2.nextOf()) < MATCH.constant && t2.nextOf().implicitConvTo(t1.nextOf()) < MATCH.constant && (t1.nextOf().ty != Tvoid && t2.nextOf().ty != Tvoid))
         {
-            error(loc, "array equality comparison type mismatch, `%s` vs `%s`", t1.toChars(), t2.toChars());
+            auto ts = toAutoQualChars(t1, t2);
+            error(loc, "array equality comparison type mismatch, `%s` vs `%s`", ts[0], ts[1]);
         }
         return true;
     }

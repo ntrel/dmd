@@ -1114,7 +1114,8 @@ extern (C++) Expression op_overload(Expression e, Scope* sc)
                     result = result.trySemantic(sc); // for better error message
                     if (!result)
                     {
-                        e.error("cannot compare %s and %s", t1.toChars(), t2.toChars());
+                        auto ts = toAutoQualChars(t1, t2);
+                        e.error("cannot compare %s and %s", ts[0], ts[1]);
                         result = new ErrorExp();
                     }
                     return;

@@ -1191,8 +1191,8 @@ private extern (C++) final class StatementSemanticVisitor : Visitor
                         {
                             if (var.type.constConv(p.type) <= MATCH.nomatch)
                             {
-                                fs.error("key type mismatch, `%s` to `ref %s`",
-                                    var.type.toChars(), p.type.toChars());
+                                auto ts = toAutoQualChars(var.type, p.type);
+                                fs.error("key type mismatch, `%s` to `ref %s`", ts[0], ts[1]);
                                 goto case Terror;
                             }
                         }
@@ -1226,8 +1226,9 @@ private extern (C++) final class StatementSemanticVisitor : Visitor
                             Type t = tab.nextOf();
                             if (t.constConv(p.type) <= MATCH.nomatch)
                             {
+                                auto ts = toAutoQualChars(t, p.type);
                                 fs.error("argument type mismatch, `%s` to `ref %s`",
-                                    t.toChars(), p.type.toChars());
+                                    ts[0], ts[1]);
                                 goto case Terror;
                             }
                         }
@@ -2066,7 +2067,8 @@ else
         {
             if (fs.key.type.constConv(fs.prm.type) <= MATCH.nomatch)
             {
-                fs.error("argument type mismatch, `%s` to ref `%s`", fs.key.type.toChars(), fs.prm.type.toChars());
+                auto ts = toAutoQualChars(fs.key.type, fs.prm.type);
+                fs.error("argument type mismatch, `%s` to ref `%s`", ts[0], ts[1]);
                 return setError();
             }
         }

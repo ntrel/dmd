@@ -8751,7 +8751,8 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
             Type t2next = t2.nextOf();
             if (t1next.implicitConvTo(t2next) < MATCH.constant && t2next.implicitConvTo(t1next) < MATCH.constant && (t1next.ty != Tvoid && t2next.ty != Tvoid))
             {
-                exp.error("array comparison type mismatch, %s vs %s", t1next.toChars(), t2next.toChars());
+                auto ts = toAutoQualChars(t1next, t2next);
+                exp.error("array comparison type mismatch, %s vs %s", ts[0], ts[1]);
                 return setError();
             }
             if ((t1.ty == Tarray || t1.ty == Tsarray) && (t2.ty == Tarray || t2.ty == Tsarray))
