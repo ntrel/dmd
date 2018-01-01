@@ -2542,9 +2542,15 @@ extern (C++) FuncDeclaration resolveFuncCall(Loc loc, Scope* sc, Dsymbol s,
     {
         if (td && !fd) // all of overloads are templates
         {
-            .error(loc, "%s `%s.%s` cannot deduce function from argument types `!(%s)%s`, candidates are:",
-                td.kind(), td.parent.toPrettyChars(), td.ident.toChars(),
-                tiargsBuf.peekString(), fargsBuf.peekString());
+            int total = 0;
+            overloadApply(td, (s) { if (s.isTemplateDeclaration()) ++total; return 0; });
+            if (total == 1)
+                .error(loc, "deduced %s `%s` is not callable using argument types `%s`",
+                    td.onemember.kind(), td.toPrettyChars(), fargsBuf.peekString());
+            else
+                .error(loc, "%s `%s.%s` cannot deduce function from argument types `!(%s)%s`, candidates are:",
+                    td.kind(), td.parent.toPrettyChars(), td.ident.toChars(),
+                    tiargsBuf.peekString(), fargsBuf.peekString());
 
             // Display candidate templates (even if there are no multiple overloads)
             int numToDisplay = numOverloadsDisplay;
@@ -2553,14 +2559,20 @@ extern (C++) FuncDeclaration resolveFuncCall(Loc loc, Scope* sc, Dsymbol s,
                 auto td = s.isTemplateDeclaration();
                 if (!td)
                     return 0;
-                .errorSupplemental(td.loc, "`%s`", td.toPrettyChars());
+                if (total == 1)
+                {
+                    auto tf = cast(TypeFunction)td.onemember.isFuncDeclaration.type;
+                    showArgMismatch(td.loc, fargs, tf, failIndex);
+                }
+                else
+                    .errorSupplemental(td.loc, "`%s`", td.toPrettyChars());
+
                 if (global.params.verbose || --numToDisplay != 0 || !td.overnext)
                     return 0;
 
                 // Too many overloads to sensibly display.
                 // Just show count of remaining overloads.
-                int num = 0;
-                overloadApply(td.overnext, (s) { ++num; return 0; });
+                const num = total - numOverloadsDisplay;
                 if (num > 0)
                     .errorSupplemental(loc, "... (%d more, -v to show) ...", num);
                 return 1;   // stop iterating
