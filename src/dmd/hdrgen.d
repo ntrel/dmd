@@ -3425,6 +3425,11 @@ extern (C++) void arrayObjectsToBuffer(OutBuffer* buf, Objects* objects)
     }
 }
 
+/** Pretty print function parameters.
+ * Params:
+ *  parameters = parameters to print, such as TypeFunction.parameters.
+ *  varargs = Kind of varargs, see TypeFunction.varargs.
+ * Returns: NT string representing parameters. */
 extern (C++) const(char)* parametersTypeToChars(Parameters* parameters, int varargs)
 {
     OutBuffer buf;
@@ -3434,6 +3439,11 @@ extern (C++) const(char)* parametersTypeToChars(Parameters* parameters, int vara
     return buf.extractString();
 }
 
+/** Pretty print function parameters.
+ * Params:
+ *  parameter = parameter to print.
+ *  varargs = Kind of varargs, see TypeFunction.varargs.
+ * Returns: NT string representing parameter. */
 extern (C++) const(char)* parameterToChars(Parameter parameter, int varargs)
 {
     OutBuffer buf;
