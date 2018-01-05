@@ -2490,7 +2490,8 @@ extern (C++) FuncDeclaration resolveFuncCall(Loc loc, Scope* sc, Dsymbol s,
     m.last = MATCH.nomatch;
 
     size_t failIndex;
-    functionResolve(&m, s, loc, sc, tiargs, tthis, fargs, &failIndex);
+    const(char)* failMessage;
+    functionResolve(&m, s, loc, sc, tiargs, tthis, fargs, &failIndex, &failMessage);
 
     if (m.last > MATCH.nomatch && m.lastf)
     {
@@ -2608,7 +2609,7 @@ extern (C++) FuncDeclaration resolveFuncCall(Loc loc, Scope* sc, Dsymbol s,
                     .error(loc, "%s `%s%s%s` is not callable using argument types `%s`",
                         fd.kind(), fd.toPrettyChars(), parametersTypeToChars(tf.parameters, tf.varargs),
                         tf.modToChars(), fargsBuf.peekString());
-                    showArgMismatch(loc, fargs, tf, failIndex);
+                    showArgMismatch(loc, fargs, tf, failIndex, failMessage);
                 }
             }
 
@@ -3627,8 +3628,9 @@ extern (C++) final class DeleteDeclaration : FuncDeclaration
  *  loc = line information for error message
  *  fargs = arguments to function
  *  tf = function called
- *  failIndex = index of first argument mismatch */
-void showArgMismatch(Loc loc, Expressions* fargs, TypeFunction tf, size_t failIndex)
+ *  failIndex = index of first argument mismatch
+ *  msg = callMatch error message */
+void showArgMismatch(Loc loc, Expressions* fargs, TypeFunction tf, size_t failIndex, const(char)* msg = null)
 {
     if (failIndex < fargs.dim && failIndex < tf.parameters.dim)
     {
@@ -3645,4 +3647,6 @@ void showArgMismatch(Loc loc, Expressions* fargs, TypeFunction tf, size_t failIn
         errorSupplemental(loc, "cannot pass %sargument `%s` of type `%s` to parameter `%s`",
             rv.ptr, arg.toChars(), at, parameterToChars(par, tf.varargs, qual));
     }
+    if (msg)
+        errorSupplemental(loc, msg);
 }

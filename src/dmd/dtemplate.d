@@ -2326,9 +2326,10 @@ extern (C++) final class TypeDeduced : Type
  *      tthis           if !NULL, the 'this' pointer argument
  *      fargs           arguments to function
  *      failedIndex     address to store argument index of first type mismatch
+ *      msg             address to store error message
  */
 void functionResolve(Match* m, Dsymbol dstart, Loc loc, Scope* sc, Objects* tiargs,
-    Type tthis, Expressions* fargs, size_t* failedIndex = null)
+    Type tthis, Expressions* fargs, size_t* failedIndex = null, const(char)** msg = null)
 {
     version (none)
     {
@@ -2414,7 +2415,7 @@ void functionResolve(Match* m, Dsymbol dstart, Loc loc, Scope* sc, Objects* tiar
             else
                 return 0;   // MATCH.nomatch
         }
-        MATCH mfa = tf.callMatch(tthis_fd, fargs, 0, failedIndex);
+        MATCH mfa = tf.callMatch(tthis_fd, fargs, 0, failedIndex, msg);
         //printf("test1: mfa = %d\n", mfa);
         if (mfa > MATCH.nomatch)
         {

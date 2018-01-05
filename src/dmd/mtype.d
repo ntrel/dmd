@@ -5899,10 +5899,12 @@ extern (C++) final class TypeFunction : TypeNext
      * Input:
      *      flag    1       performing a partial ordering match
      *      failedIndex     address to store argument index of first type mismatch
+     *      msg             address to store error message
      * Returns:
      *      MATCHxxxx
      */
-    MATCH callMatch(Type tthis, Expressions* args, int flag = 0, size_t* failedIndex = null)
+    MATCH callMatch(Type tthis, Expressions* args, int flag = 0,
+        size_t* failedIndex = null, const(char)** msg = null)
     {
         //printf("TypeFunction::callMatch() %s\n", toChars());
         MATCH match = MATCH.exact; // assume exact match
@@ -5937,6 +5939,16 @@ extern (C++) final class TypeFunction : TypeNext
             }
         }
 
+        void setMessage(A...)(const(char)* format, A args)
+        {
+            u = size_t.max;
+            if (msg)
+            {
+                OutBuffer buf;
+                buf.printf(format, args);
+                *msg = buf.extractData();
+            }
+        }
         auto u = size_t.max; // used for failedIndex if no match
         size_t nparams = Parameter.dim(parameters);
         size_t nargs = args ? args.dim : 0;
@@ -5946,7 +5958,10 @@ extern (C++) final class TypeFunction : TypeNext
         else if (nargs > nparams)
         {
             if (varargs == 0)
+            {
+                setMessage("expected %d argument(s), not %d", nparams, nargs);
                 goto Nomatch;
+            }
             // too many args; no match
             match = MATCH.convert; // match ... with a "conversion" match level
         }
@@ -6032,7 +6047,10 @@ extern (C++) final class TypeFunction : TypeNext
                     if (m && !arg.isLvalue())
                     {
                         if (p.storageClass & STCout)
+                        {
+                            if (msg) *msg = "cannot pass rvalue to out parameter";
                             goto Nomatch;
+                        }
 
                         if (arg.op == TOKstring && tp.ty == Tsarray)
                         {
@@ -6054,7 +6072,10 @@ extern (C++) final class TypeFunction : TypeNext
                             }
                         }
                         else
+                        {
+                            if (msg) *msg = "cannot pass rvalue to ref parameter";
                             goto Nomatch;
+                        }
                     }
 
                     /* Find most derived alias this type being matched.
@@ -6075,7 +6096,10 @@ extern (C++) final class TypeFunction : TypeNext
                      *  ref T[dim] <- an lvalue of const(T[dim]) argument
                      */
                     if (!ta.constConv(tp))
+                    {
+                        if (msg) *msg = "cannot pass const argument to ref parameter";
                         goto Nomatch;
+                    }
                 }
             }
 
@@ -6101,7 +6125,11 @@ extern (C++) final class TypeFunction : TypeNext
                         tsa = cast(TypeSArray)tb;
                         sz = tsa.dim.toInteger();
                         if (sz != nargs - u)
+                        {
+                            setMessage("expected %d argument(s), not %d for variadic parameter",
+                                sz, nargs - u);
                             goto Nomatch;
+                        }
                         goto case Tarray;
                     case Tarray:
                         {
@@ -6132,7 +6160,10 @@ extern (C++) final class TypeFunction : TypeNext
                                     m = arg.implicitConvTo(ta.next);
 
                                 if (m == MATCH.nomatch)
+                                {
+                                    if (msg) *msg = "cannot implicitly convert argument";
                                     goto Nomatch;
+                                }
                                 if (m < match)
                                     match = m;
                             }
@@ -6144,9 +6175,11 @@ extern (C++) final class TypeFunction : TypeNext
                         goto Ldone;
 
                     default:
+                        if (msg) *msg = "cannot implicitly convert argument";
                         goto Nomatch;
                     }
                 }
+                if (msg) *msg = "cannot implicitly convert argument";
                 goto Nomatch;
             }
             if (m < match)
