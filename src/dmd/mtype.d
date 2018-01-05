@@ -5893,6 +5893,30 @@ extern (C++) final class TypeFunction : TypeNext
         return t.merge();
     }
 
+    // arguments get specially formatted
+    private const(char)* getParamError(const(char)* format, Expression arg, Parameter par)
+    {
+        // disambiguate when toChars() is the same
+        auto at = arg.type.toChars();
+        bool qual = !arg.type.equals(par.type) && strcmp(at, par.type.toChars()) == 0;
+        if (qual)
+            at = arg.type.toPrettyChars(true);
+        OutBuffer as;
+        as.printf("`%s` of type `%s`", arg.toChars(), at);
+        OutBuffer ps;
+        ps.printf("`%s`", parameterToChars(par, varargs, qual));
+        OutBuffer buf;
+        buf.printf(format, as.peekString(), ps.peekString());
+        return buf.extractString();
+    }
+
+    private const(char)* getMatchError(A...)(const(char)* format, A args)
+    {
+        OutBuffer buf;
+        buf.printf(format, args);
+        return buf.extractData();
+    }
+
     /********************************
      * 'args' are being matched to function 'this'
      * Determine match level.
@@ -5939,16 +5963,6 @@ extern (C++) final class TypeFunction : TypeNext
             }
         }
 
-        void setMessage(A...)(const(char)* format, A args)
-        {
-            u = size_t.max;
-            if (msg)
-            {
-                OutBuffer buf;
-                buf.printf(format, args);
-                *msg = buf.extractData();
-            }
-        }
         auto u = size_t.max; // used for failedIndex if no match
         size_t nparams = Parameter.dim(parameters);
         size_t nargs = args ? args.dim : 0;
@@ -5959,7 +5973,7 @@ extern (C++) final class TypeFunction : TypeNext
         {
             if (varargs == 0)
             {
-                setMessage("expected %d argument(s), not %d", nparams, nargs);
+                if (msg) *msg = getMatchError("expected %d argument(s), not %d", nparams, nargs);
                 goto Nomatch;
             }
             // too many args; no match
@@ -6048,7 +6062,7 @@ extern (C++) final class TypeFunction : TypeNext
                     {
                         if (p.storageClass & STCout)
                         {
-                            if (msg) *msg = "cannot pass rvalue to out parameter";
+                            if (msg) *msg = getParamError("cannot pass rvalue %s to %s", arg, p);
                             goto Nomatch;
                         }
 
@@ -6073,7 +6087,7 @@ extern (C++) final class TypeFunction : TypeNext
                         }
                         else
                         {
-                            if (msg) *msg = "cannot pass rvalue to ref parameter";
+                            if (msg) *msg = getParamError("cannot pass rvalue %s to %s", arg, p);
                             goto Nomatch;
                         }
                     }
@@ -6097,7 +6111,7 @@ extern (C++) final class TypeFunction : TypeNext
                      */
                     if (!ta.constConv(tp))
                     {
-                        if (msg) *msg = "cannot pass const argument to ref parameter";
+                        if (msg) *msg = getParamError("cannot pass const argument %s to %s", arg, p);
                         goto Nomatch;
                     }
                 }
@@ -6126,7 +6140,7 @@ extern (C++) final class TypeFunction : TypeNext
                         sz = tsa.dim.toInteger();
                         if (sz != nargs - u)
                         {
-                            setMessage("expected %d argument(s), not %d for variadic parameter",
+                            if (msg) *msg = getMatchError("expected %d argument(s), not %d for variadic parameter",
                                 sz, nargs - u);
                             goto Nomatch;
                         }
@@ -6161,7 +6175,7 @@ extern (C++) final class TypeFunction : TypeNext
 
                                 if (m == MATCH.nomatch)
                                 {
-                                    if (msg) *msg = "cannot implicitly convert argument";
+                                    if (msg) *msg = getParamError("cannot pass %s to parameter %s", arg, p);
                                     goto Nomatch;
                                 }
                                 if (m < match)
@@ -6175,11 +6189,14 @@ extern (C++) final class TypeFunction : TypeNext
                         goto Ldone;
 
                     default:
-                        if (msg) *msg = "cannot implicitly convert argument";
+                        if (msg) *msg = getParamError("cannot pass %s to parameter %s", (*args)[u], p);
                         goto Nomatch;
                     }
                 }
-                if (msg) *msg = "cannot implicitly convert argument";
+                if (msg && u < nargs)
+                    *msg = getParamError("cannot pass %s to parameter %s", (*args)[u], p);
+                else if (msg)
+                    *msg = getMatchError("expected %d arguments, not %d", nparams, nargs);
                 goto Nomatch;
             }
             if (m < match)
