@@ -3643,6 +3643,6 @@ void showArgMismatch(Loc loc, Expressions* fargs, TypeFunction tf, size_t failIn
             at = arg.type.toPrettyChars(true);
 
         errorSupplemental(loc, "cannot pass %sargument `%s` of type `%s` to parameter `%s`",
-            rv.ptr, arg.toChars(), at, parameterToChars(par, tf.varargs, qual));
+            rv.ptr, arg.toChars(), at, parameterToChars(par, tf, qual));
     }
 }
