@@ -6188,14 +6188,13 @@ extern (C++) final class TypeFunction : TypeNext
                         goto Ldone;
 
                     default:
-                        if (pMessage) *pMessage = getParamError("cannot pass argument %s to parameter %s", (*args)[u], p);
-                        goto Nomatch;
+                        break;
                     }
                 }
                 if (pMessage && u < nargs)
                     *pMessage = getParamError("cannot pass argument %s to parameter %s", (*args)[u], p);
                 else if (pMessage)
-                    *pMessage = getMatchError("expected %d arguments, not %d", nparams, nargs);
+                    *pMessage = getMatchError("expected %d argument(s), not %d", nparams, nargs);
                 goto Nomatch;
             }
             if (m < match)
