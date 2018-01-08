@@ -5910,6 +5910,13 @@ extern (C++) final class TypeFunction : TypeNext
         return buf.extractString();
     }
 
+    private const(char)* getMatchError(A...)(const(char)* format, A args)
+    {
+        OutBuffer buf;
+        buf.printf(format, args);
+        return buf.extractData();
+    }
+
     /********************************
      * 'args' are being matched to function 'this'
      * Determine match level.
@@ -5962,7 +5969,10 @@ extern (C++) final class TypeFunction : TypeNext
         else if (nargs > nparams)
         {
             if (varargs == 0)
+            {
+                if (pMessage) *pMessage = getMatchError("expected %d argument(s), not %d", nparams, nargs);
                 goto Nomatch;
+            }
             // too many args; no match
             match = MATCH.convert; // match ... with a "conversion" match level
         }
@@ -6128,7 +6138,11 @@ extern (C++) final class TypeFunction : TypeNext
                         tsa = cast(TypeSArray)tb;
                         sz = tsa.dim.toInteger();
                         if (sz != nargs - u)
+                        {
+                            if (pMessage) *pMessage = getMatchError("expected %d variadic argument(s), not %d",
+                                sz, nargs - u);
                             goto Nomatch;
+                        }
                         goto case Tarray;
                     case Tarray:
                         {
@@ -6180,6 +6194,8 @@ extern (C++) final class TypeFunction : TypeNext
                 }
                 if (pMessage && u < nargs)
                     *pMessage = getParamError("cannot pass argument %s to parameter %s", (*args)[u], p);
+                else if (pMessage)
+                    *pMessage = getMatchError("expected %d arguments, not %d", nparams, nargs);
                 goto Nomatch;
             }
             if (m < match)
