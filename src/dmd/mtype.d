@@ -5914,7 +5914,7 @@ extern (C++) final class TypeFunction : TypeNext
     {
         OutBuffer buf;
         buf.printf(format, args);
-        return buf.extractData();
+        return buf.extractString();
     }
 
     /********************************
