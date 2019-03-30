@@ -3556,6 +3556,15 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
 
             exp.type = exp.type.pointerTo();
         }
+        else if (tb.ty == Taarray)
+        {
+            if (nargs)
+            {
+                exp.error("`new` cannot take arguments for an associative array",
+                    tb.nextOf().toChars());
+                return setError();
+            }
+        }
         else if (tb.ty == Tarray && nargs)
         {
             Type tn = tb.nextOf().baseElemOf();
