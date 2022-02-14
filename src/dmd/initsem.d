@@ -314,6 +314,8 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
         }
         i.type = t;
         length = 0;
+        ubyte[uint] indexes;
+        indexes.reserve(i.index.dim);
         for (size_t j = 0; j < i.index.dim; j++)
         {
             Expression idx = i.index[j];
@@ -334,6 +336,12 @@ extern(C++) Initializer initializerSemantic(Initializer init, Scope* sc, ref Typ
                 if (idx.op == EXP.error)
                     errors = true;
             }
+            if (length in indexes)
+            {
+                error(i.loc, "duplicate array index %u", length);
+                errors = true;
+            }
+            indexes[length] = 1;
             Initializer val = i.value[j];
             ExpInitializer ei = val.isExpInitializer();
             if (ei && !idx)
