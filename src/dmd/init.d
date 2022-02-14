@@ -183,12 +183,8 @@ extern (C++) final class ArrayInitializer : Initializer
 
     bool isAssociativeArray() const pure
     {
-        foreach (idx; index)
-        {
-            if (idx)
-                return true;
-        }
-        return false;
+        // if the first initializer has no index, it's a dynamic array
+        return index.length > 0 && index[0];
     }
 
     override void accept(Visitor v)
