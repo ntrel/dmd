@@ -4983,7 +4983,17 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         case TOK.delegate_:
             save = token.value;
             nextToken();
-            if (token.value == TOK.ref_)
+            if (token.value == TOK.auto_)
+            {
+                // function auto ref (parameters) { statements... }
+                // delegate auto ref (parameters) { statements... }
+                stc = STC.auto_ & STC.ref_;
+                nextToken();
+                if (token.value != TOK.ref_)
+                    error("`ref` expected, not `%s`", token.toChars());
+                nextToken();
+            }
+            else if (token.value == TOK.ref_)
             {
                 // function ref (parameters) { statements... }
                 // delegate ref (parameters) { statements... }
