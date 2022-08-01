@@ -698,6 +698,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 if (token.value == TOK.identifier && hasOptionalParensThen(peek(&token), TOK.assign))
                 {
                     a = parseAutoDeclarations(getStorageClass!AST(pAttrs), pAttrs.comment);
+                LpostAuto:
                     if (a && a.dim)
                         *pLastDecl = (*a)[a.dim - 1];
                     if (pAttrs.udas)
@@ -706,6 +707,11 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                         pAttrs.udas = null;
                     }
                     break;
+                }
+                if (token.value == TOK.leftParenthesis)
+                {
+                    a = parseUnpackDeclarations(getStorageClass!AST(pAttrs), pAttrs.comment);
+                    goto LpostAuto;
                 }
 
                 /* Look for return type inference for template functions.
@@ -1129,6 +1135,56 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             }
             break;
         }
+        return a;
+    }
+
+    /** auto (a, b) = ValueSeq;
+     */
+    private AST.Dsymbols* parseUnpackDeclarations(StorageClass storageClass, const(char)* comment)
+    {
+        nextToken();
+        auto a = new AST.Dsymbols();
+
+        for (int i = 0;; i++)
+        {
+            assert(token.value == TOK.identifier);
+            Identifier ident = token.ident;
+        //~ error("%d", i);
+        //~ error("%s", token.toString(token.value));
+        //~ error("%s", ident.toString);
+            nextToken(); // skip over ident
+
+            // use void temporarily
+            auto v = new AST.VarDeclaration(token.loc, AST.Type.tvoid, ident, null, storageClass);
+
+            AST.Dsymbol s = v;
+            addComment(s, comment);
+            a.push(s);
+            if (token.value == TOK.rightParenthesis)
+                break;
+            // TODO expect rightParenthesis or comma for error
+            check(TOK.comma);
+        }
+        check(TOK.rightParenthesis);
+        check(TOK.assign);   // skip over '='
+        AST.Initializer _init = parseInitializer();
+        auto te = _init.isExpInitializer().exp;
+        //~ auto te = ie.isTupleExp();
+        //~ if (!te)
+        //~ {
+            //~ error(_init.loc, "expected a sequence");//, not %s", ie.kind);
+        //~ }
+        foreach (i; 0 .. a.dim)
+        {
+            AST.Dsymbol s = (*a)[i];
+            auto v = s.isVarDeclaration();
+            v.type = null;
+            // FIXME use temporary for te
+            v._init = new AST.ExpInitializer(te.loc,
+                new AST.IndexExp(te.loc, te,
+                    new AST.IntegerExp(te.loc, i, AST.Type.tuns32)));
+        }
+        check(TOK.semicolon);
         return a;
     }
 
@@ -4439,6 +4495,17 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 }
                 return a;
             }
+            if ((storage_class || udas) && token.value == TOK.leftParenthesis)
+            {
+                AST.Dsymbols* a = parseUnpackDeclarations(getStorageClass!AST(pAttrs), pAttrs.comment);
+                if (udas)
+                {
+                    AST.Dsymbol s = new AST.UserAttributeDeclaration(udas, a);
+                    a = new AST.Dsymbols();
+                    a.push(s);
+                }
+                return a;
+            }
 
             /* Look for return type inference for template functions.
              */
@@ -7001,12 +7068,12 @@ LagainStc:
      * advance to next token.
      * Params:
      *  value = token value to compare with
-     *  string = for error message
+     *  prevToken = for error message
      */
-    void check(TOK value, const(char)* string)
+    void check(TOK value, const(char)* prevToken)
     {
         if (token.value != value)
-            error("found `%s` when expecting `%s` following %s", token.toChars(), Token.toChars(value), string);
+            error("found `%s` when expecting `%s` following %s", token.toChars(), Token.toChars(value), prevToken);
         nextToken();
     }
 
