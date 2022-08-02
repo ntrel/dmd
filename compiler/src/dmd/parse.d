@@ -1143,6 +1143,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
     private AST.Dsymbols* parseUnpackDeclarations(StorageClass storageClass, const(char)* comment)
     {
         nextToken();
+        const loc1 = token.loc;
         auto a = new AST.Dsymbols();
 
         for (int i = 0;; i++)
@@ -1167,8 +1168,12 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         }
         check(TOK.rightParenthesis);
         check(TOK.assign);   // skip over '='
-        AST.Initializer _init = parseInitializer();
-        auto te = _init.isExpInitializer().exp;
+        auto ei = parseInitializer().isExpInitializer();
+        // make temporary for RHS
+        auto vd = new AST.VarDeclaration(ei.exp.loc, null,
+            Identifier.generateId("__tup"), ei);
+        a.insert(0, vd);
+        auto te = new AST.VarExp(loc1, vd);
         //~ auto te = ie.isTupleExp();
         //~ if (!te)
         //~ {
@@ -1179,10 +1184,9 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             AST.Dsymbol s = (*a)[i];
             auto v = s.isVarDeclaration();
             v.type = null;
-            // FIXME use temporary for te
-            v._init = new AST.ExpInitializer(te.loc,
-                new AST.IndexExp(te.loc, te,
-                    new AST.IntegerExp(te.loc, i, AST.Type.tuns32)));
+            auto ie = new AST.IndexExp(te.loc, te,
+                new AST.IntegerExp(te.loc, i, AST.Type.tuns32));
+            v._init = new AST.ExpInitializer(te.loc, ie);
         }
         check(TOK.semicolon);
         return a;
