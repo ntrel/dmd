@@ -4345,7 +4345,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         bool isAliasDeclaration = false;
         if (token.value == TOK.alias_)
         {
-            if (auto a = parseAliasDeclarations(comment))
+            if (auto a = parseAliasDeclarations(comment, pAttrs))
                 return a;
             /* Handle these later:
              *   alias StorageClasses type ident;
@@ -4740,10 +4740,12 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
      * https://dlang.org/spec/declaration.html#alias
      * Params:
      *  comment = if not null, comment to attach to symbol
+     *  pAttrs = prefix attributes - only used for alias this
      * Returns:
      *  array of symbols
      */
-    private AST.Dsymbols* parseAliasDeclarations(const(char)* comment)
+    private AST.Dsymbols* parseAliasDeclarations(const(char)* comment, 
+        PrefixAttributes!AST* pAttrs)
     {
         const loc = token.loc;
         nextToken();
@@ -4761,6 +4763,12 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         if (token.value == TOK.identifier && peekNext() == TOK.this_)
         {
             auto s = new AST.AliasThis(loc, token.ident);
+            auto vk = pAttrs.visibility.kind;
+            with (AST.Visibility.Kind) if (vk != undefined && vk != public_)
+            {
+                // Deprecated in 2.101
+                deprecation("alias this cannot have non-public visibility");
+            }
             nextToken();
             check(TOK.this_);
             check(TOK.semicolon, "`alias Identifier this`");
