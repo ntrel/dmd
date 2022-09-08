@@ -1644,17 +1644,25 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
      *      mixin a.b.c!(args).Foo!(args);
      *      mixin Foo!(args) identifier;
      *      mixin typeof(expr).identifier!(args);
+     *      mixin identifier = TemplateInstance;
      */
     private AST.Dsymbol parseMixin()
     {
         AST.TemplateMixin tm;
-        Identifier id;
+        Identifier id, mid;
         AST.Objects* tiargs;
 
         //printf("parseMixin()\n");
         const locMixin = token.loc;
         nextToken(); // skip 'mixin'
 
+        // mixin id = expr;
+        if (token.value == TOK.identifier && peek(&token).value == TOK.assign)
+        {
+            mid = token.ident;
+            nextToken();
+            nextToken();
+        }
         auto loc = token.loc;
         AST.TypeQualified tqual = null;
         if (token.value == TOK.dot)
@@ -1688,6 +1696,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
             if (tiargs && token.value == TOK.dot)
             {
+                // mixin a.b.c!(args).
                 auto tempinst = new AST.TemplateInstance(loc, id, tiargs);
                 if (!tqual)
                     tqual = new AST.TypeInstance(loc, tempinst);
@@ -1717,14 +1726,14 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             nextToken();
         }
 
-        id = null;
-        if (token.value == TOK.identifier)
+        if (!mid && token.value == TOK.identifier)
         {
-            id = token.ident;
+            // mixin TemplateInstance Identifier;
+            mid = token.ident;
             nextToken();
         }
 
-        tm = new AST.TemplateMixin(locMixin, id, tqual, tiargs);
+        tm = new AST.TemplateMixin(locMixin, mid, tqual, tiargs);
         if (token.value != TOK.semicolon)
             error("`;` expected after `mixin`");
         nextToken();
@@ -5941,6 +5950,7 @@ LagainStc:
                     s = new AST.ExpStatement(loc, d);
                     break;
                 }
+                // mixin instantiation
                 AST.Dsymbol d = parseMixin();
                 s = new AST.ExpStatement(loc, d);
                 if (flags & ParseStatementFlags.scope_)
