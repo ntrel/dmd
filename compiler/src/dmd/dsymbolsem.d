@@ -2704,12 +2704,13 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         auto tempdecl = tm.tempdecl.isTemplateDeclaration();
         assert(tempdecl);
 
-        if (!tm.ident)
+        if (tm.ident && !tempdecl.onemember)
         {
-            /* Assign scope local unique identifier, as same as lambdas.
-             */
-            const(char)[] s = "__mixin";
-
+            //~ if (tempdecl.ismixin && tempdecl.onemember)
+                //~ tempdecl.error("eponymous mixin templates not supported yet");
+        }
+        else
+        {
             if (FuncDeclaration func = sc.parent.isFuncDeclaration())
             {
                 tm.symtab = func.localsymtab;
@@ -2724,7 +2725,9 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
                 tm.symtab = sc.parent.isScopeDsymbol().symtab;
             L1:
                 assert(tm.symtab);
-                tm.ident = Identifier.generateId(s, tm.symtab.length + 1);
+                // Assign scope local unique identifier, as same as lambdas.
+                if (!tm.ident)
+                    tm.ident = Identifier.generateId("__mixin", tm.symtab.length + 1);
                 tm.symtab.insert(tm);
             }
         }
