@@ -1520,6 +1520,33 @@ Type toStaticArrayType(SliceExp e)
             size_t len = cast(size_t)(upr.toUInteger() - lwr.toUInteger());
             return e.type.toBasetype().nextOf().sarrayOf(len);
         }
+        // ignore compiler inserted casts
+        if (auto ce = lwr.isCastExp())
+        {
+            if (ce.to == Type.tsize_t) lwr = ce.e1;
+        }
+        if (auto ce = upr.isCastExp())
+        {
+            if (ce.to == Type.tsize_t) upr = ce.e1;
+        }
+        if (lwr.isVarExp() && upr.isBinExp())
+        {
+            auto ve1 = lwr.isVarExp();
+            auto be = upr.isBinExp();
+            if (auto ve2 = be.e1.isVarExp())
+            {
+                // e1[id .. id + c]
+                if (be.op == EXP.add && ve1.var.ident == ve2.var.ident)
+                {
+                    Expression be2 = be.e2.optimize(WANTvalue);
+                    if (be2.isConst())
+                    {
+                        size_t len = be2.toUInteger();
+                        return e.type.toBasetype().nextOf().sarrayOf(len);
+                    }
+                }
+            }
+        }
     }
     else
     {
