@@ -368,6 +368,27 @@ private immutable ddoc_decl_e = ")\n";
 private immutable ddoc_decl_dd_s = "$(DDOC_DECL_DD ";
 private immutable ddoc_decl_dd_e = ")\n";
 
+private void linkUnitTests(ScopeDsymbol sds)
+{
+printf("%s\n", sds.toChars());
+    Dsymbol last;
+    foreach (i; 0 .. sds.members.dim)
+    {
+        Dsymbol s = (*sds.members)[i];
+    printf("\t%s\n", s.toChars());
+        if (auto utd = s.isUnitTestDeclaration())
+        {
+            if (last)
+                last.ddocUnittest = utd;
+        if(last)printf("\t\t->%s\n", last.toChars());
+        }
+        if (!s.isAttribDeclaration() && s.visible().kind != Visibility.Kind.private_)
+            last = s;
+        if (auto s2 = s.isScopeDsymbol())
+            s2.linkUnitTests();
+    }
+}
+
 /****************************************************
  */
 extern(C++) void gendocfile(Module m)
@@ -446,6 +467,7 @@ extern(C++) void gendocfile(Module m)
     }
     else
     {
+        m.linkUnitTests();
         Dsymbols a;
         a.push(m);
         dc.writeSections(sc, &a, &buf);
