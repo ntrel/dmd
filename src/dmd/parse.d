@@ -1981,7 +1981,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
     {
         const loc = token.loc;
         AST.Expression exp;
-        AST.Expression msg = null;
+        AST.Expressions* msg = null;
 
         //printf("parseStaticAssert()\n");
         nextToken();
@@ -1993,9 +1993,9 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             nextToken();
             if (token.value != TOK.rightParenthesis)
             {
-                msg = parseAssignExp();
-                if (token.value == TOK.comma)
-                    nextToken();
+                msg = parseArguments();
+                //~ if (token.value == TOK.comma)
+                    //~ nextToken();
             }
         }
         check(TOK.rightParenthesis);
@@ -4881,6 +4881,10 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                     }
 
                     v = new AST.AliasDeclaration(loc, ident, s);
+                }
+                else if (token.value == TOK.traits)
+                {
+                    parseTraits
                 }
                 else
                 {
