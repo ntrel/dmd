@@ -6166,8 +6166,37 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             {
                 nextToken();
                 check(TOK.leftParenthesis);
+                // if (auto x
                 auto param = parseAssignCondition();
-                auto condition = parseExpression();
+                AST.Expression condition;
+                if (!param && token.value == TOK.leftParenthesis && peekNext() == TOK.auto_ && peekNext2() == TOK.identifier)
+                {   // if ((auto x = init)
+                    nextToken();
+                    //~ Identifier id;
+                    auto par = parseAssignCondition();
+                    //~ auto t = parseType(&id);
+                    //~ if (!id)
+                        //~ error(loc, "no identifier for declarator `%s`", t.toChars());
+                    //~ check(TOK.assign);
+                    auto ei = parseExpInitializer(loc);
+                    auto vd = new AST.VarDeclaration(loc, par.type, par.ident, ei);
+                    check(TOK.rightParenthesis);
+                    auto ce = new AST.CommaExp(loc,
+                        new AST.DeclarationExp(loc, vd),
+                        new AST.VarExp(loc, vd));
+                    condition = parsePostExp(ce);
+                    //~ check(TOK.rightParenthesis);
+                    //~ auto ib = parseStatement(ParseStatementFlags.scope_);
+                    //~ assert(token.value != TOK.else_); // FIXME
+                    //~ s = new AST.IfStatement(loc, null, e, ib, null, loc);
+                    //~ auto statements = new AST.Statements(2);
+                    //~ (*statements)[0] = vd;
+                    //~ (*statements)[1] = s;
+                    //~ s = new AST.CompoundStatement(loc, statements);
+                    //~ break;
+                }
+                else condition = parseExpression();
+
                 closeCondition("if", param, condition);
 
                 {
