@@ -4375,7 +4375,17 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
              */
             isAliasDeclaration = true;
         }
-
+        if (token.value == TOK.const_)
+        {
+            Token *tk = &token;
+            if (!isDeclarator(&tk, null, null, TOK.reserved))
+            {   // const(T) starts expression
+                auto s = parseStatement(0);
+                auto a = new AST.Dsymbols(1);
+                (*a)[0] = s;
+                return a;
+            }
+        }
         AST.Type ts;
 
         if (!autodecl)
@@ -5703,7 +5713,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
     /*****************************************
      * Input:
-     *      flags   PSxxxx
+     *      flags   ParseStatementFlags
      * Output:
      *      pEndloc if { ... statements ... }, store location of closing brace, otherwise loc of last token of statement
      */
