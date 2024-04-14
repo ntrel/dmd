@@ -962,6 +962,12 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
                     return retError();
                 }
 
+                if (dim == 2 && (*fs.parameters)[0].storageClass & STC.ref_)
+                {
+                    deprecation(fs.loc, "`%s` cannot be `ref`", (*fs.parameters)[0].toChars());
+                    return retError();
+                }
+
                 // Finish semantic on all foreach parameter types.
                 foreach (i; 0 .. dim)
                 {
@@ -1423,6 +1429,12 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
     {
         /* https://dlang.org/spec/statement.html#foreach-range-statement
          */
+
+        if (fs.prm.storageClass & STC.ref_)
+        {
+            deprecation(fs.loc, "`%s` cannot be `ref`", fs.prm.toChars());
+            return setError();
+        }
 
         //printf("ForeachRangeStatement::semantic() %p\n", fs);
         auto loc = fs.loc;
