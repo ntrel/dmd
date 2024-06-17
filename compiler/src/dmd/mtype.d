@@ -2776,10 +2776,13 @@ extern (C++) final class TypeDArray : TypeArray
             if (!MODimplicitConv(next.mod, ta.next.mod))
                 return MATCH.nomatch; // not const-compatible
 
-            /* Allow conversion to void[]
-             */
+            // Allow conversion to void[] unless there's qualified field data
             if (next.ty != Tvoid && ta.next.ty == Tvoid)
             {
+                if (global.params.fixImmutableConv &&
+                    !ta.next.isConst() && !next.isAssignable())
+                    return MATCH.nomatch;
+
                 return MATCH.convert;
             }
 
