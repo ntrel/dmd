@@ -1390,7 +1390,17 @@ extern (C++) final class CtorDeclaration : FuncDeclaration
 
     override const(char)* kind() const
     {
-        return isCpCtor ? "copy constructor" : "constructor";
+        switch (isGenerated + isCpCtor * 2)
+        {
+            case 0:
+                return "constructor";
+            case 1:
+                return "generated constructor";
+            case 2:
+                return "copy constructor";
+            default:
+                return "generated copy constructor";
+        }
     }
 
     override const(char)* toChars() const
