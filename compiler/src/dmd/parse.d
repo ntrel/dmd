@@ -1191,6 +1191,14 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 // recurse
                 vars.push(parseUnpackDeclaration(storage_class, false, isParameter));
             }
+            else if (storage_class == STC.none &&
+                !isDeclaration(&token, NeedDeclaratorId.must, TOK.reserved, null))
+            {
+                // not `Type ident` so must be expression
+                import dmd.dsymbol;
+                auto e = parseAssignExp();
+                vars.push(new ExpressionDsymbol(e));
+            }
             else
             {
                 TOK tkv;
@@ -1222,11 +1230,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 {
                     error("`auto ref` unpacked variables are not supported");
                 }
-                if (!t && storage_class == STC.none)
-                {
-                    error("unpacked variable `%s` needs a type or at least one storage class, did you mean `auto %s`?",
-                        i.toChars(), i.toChars());
-                }
+                assert(t || storage_class != STC.none);
                 vars.push(new AST.VarDeclaration(loc, t, i, null, storage_class)); // TODO: UDAs
             }
 
@@ -6097,9 +6101,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             auto nonLeft = next;
             while (nonLeft.value == TOK.leftParenthesis)
                 nonLeft = peek(nonLeft);
-            if ((isVariableStorageClass(nonLeft.value) ||
-                 isDeclaration(next, NeedDeclaratorId.mustIfDstyle, TOK.reserved, null) ||
-                 isDeclaration(nonLeft, NeedDeclaratorId.mustIfDstyle, TOK.reserved, null)) &&
+            if ((isVariableStorageClass(nonLeft.value) || isTupleNotation(&token)) &&
                 peekPastParen(&token).value == TOK.assign)
                 goto Ldeclaration;
 
