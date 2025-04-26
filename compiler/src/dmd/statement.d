@@ -382,6 +382,7 @@ extern (C++) class ExpStatement : Statement
         this.exp = exp;
     }
 
+    /// Use this in place of DeclarationStatement
     final extern (D) this(Loc loc, Dsymbol declaration) @safe
     {
         super(loc, STMT.Exp);
