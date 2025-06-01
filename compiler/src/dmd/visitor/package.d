@@ -60,6 +60,7 @@ public:
     void visit(ASTCodegen.TypeInfoWildDeclaration s) { visit(cast(ASTCodegen.TypeInfoDeclaration)s); }
     void visit(ASTCodegen.TypeInfoVectorDeclaration s) { visit(cast(ASTCodegen.TypeInfoDeclaration)s); }
     void visit(ASTCodegen.FuncAliasDeclaration s) { visit(cast(ASTCodegen.FuncDeclaration)s); }
+    void visit(ASTCodegen.ExpressionDsymbol eds) { visit(eds.exp); }
     void visit(ASTCodegen.ErrorInitializer i) { visit(cast(ASTCodegen.Initializer)i); }
     void visit(ASTCodegen.ErrorExp e) { visit(cast(ASTCodegen.Expression)e); }
     void visit(ASTCodegen.ComplexExp e) { visit(cast(ASTCodegen.Expression)e); }

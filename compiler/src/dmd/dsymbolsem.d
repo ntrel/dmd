@@ -447,6 +447,14 @@ private extern(C++) final class DsymbolSemanticVisitor : Visitor
         .error(dsym.loc, "%s `%s` %p has no semantic routine", dsym.kind, dsym.toPrettyChars, dsym);
     }
 
+    override void visit(ExpressionDsymbol dsym) {}
+    //~ {
+        //~ if (dsym.semanticRun >= PASS.semanticdone)
+            //~ return;
+
+        //~ dsym.exp = expressionSemantic(dsym.exp, sc);
+    //~ }
+
     override void visit(ScopeDsymbol) { }
     override void visit(Declaration) { }
 

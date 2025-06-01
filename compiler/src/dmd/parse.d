@@ -1160,28 +1160,28 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         }
     }
 
-    AST.UnpackStatement parseUnpackStatement()
-    in
-    {
-        assert(token.value == TOK.leftParenthesis);
-    }
-    do
-    {
-        const unpackLoc = token.loc;
-        nextToken();
-        auto vars = new AST.Dsymbols();
-        while (token.value != TOK.rightParenthesis)
-        {
-            const loc = token.loc;
-            // TODO
-            nextToken();
-        }
-        check(TOK.assign, "unpack statement");
-        auto _init = parseAssignExp();
-        return new AST.UnpackStatement(unpackLoc, _init);
-    }
+    //~ AST.UnpackStatement parseUnpackStatement()
+    //~ in
+    //~ {
+        //~ assert(token.value == TOK.leftParenthesis);
+    //~ }
+    //~ do
+    //~ {
+        //~ const unpackLoc = token.loc;
+        //~ nextToken();
+        //~ auto vars = new AST.Dsymbols();
+        //~ while (token.value != TOK.rightParenthesis)
+        //~ {
+            //~ const loc = token.loc;
+            //~ // TODO
+            //~ nextToken();
+        //~ }
+        //~ check(TOK.assign, "unpack statement");
+        //~ auto _init = parseAssignExp();
+        //~ return new AST.UnpackStatement(unpackLoc, _init);
+    //~ }
 
-    AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true, bool isStatement = false)
+    AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true, bool isStatement = true)
     in
     {
         assert(token.value == TOK.leftParenthesis);
@@ -6126,8 +6126,13 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
             if (global.params.tuples && isTupleNotation(&token) &&
                 peekPastParen(&token).value == TOK.assign)
-                parseUnpackStatement();
-
+            {
+                goto Ldeclaration;
+                //~ auto upd = parseUnpackDeclaration(STC.none, true, true);
+                //~ s = new AST.UnpackStatement(upd);
+                //~ s = new AST.DeclarationStatement
+                //~ break;
+            }
             goto Lexp;
 
         case TOK.assert_:

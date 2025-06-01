@@ -1884,17 +1884,19 @@ extern (C++) final class ImportStatement : Statement
  */
 extern (C++) final class UnpackStatement : Statement
 {
-    Expression _init;
+    import dmd.attrib : UnpackDeclaration;
 
-    extern (D) this(Loc loc, Expression _init) @safe
+    UnpackDeclaration upd;
+
+    extern (D) this(UnpackDeclaration upd) @safe
     {
-        super(loc, STMT.Unpack);
-        this._init = _init;
+        super(upd.loc, STMT.Unpack);
+        this.upd = upd;
     }
 
     override UnpackStatement syntaxCopy()
     {
-        return new UnpackStatement(loc, _init ? _init.syntaxCopy() : null);
+        return new UnpackStatement(upd ? upd.syntaxCopy(null) : null);
     }
 
     override void accept(Visitor v)

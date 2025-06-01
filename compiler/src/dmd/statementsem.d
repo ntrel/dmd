@@ -3742,6 +3742,11 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
         result = imps;
     }
 
+    void visitUnpack(UnpackStatement ups)
+    {
+        printf("hi\n");
+    }
+
     mixin VisitStatement!void visit;
     visit.VisitStatement(s);
     return result;
