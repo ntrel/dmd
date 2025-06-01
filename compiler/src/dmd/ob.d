@@ -855,6 +855,7 @@ void toObNodes(ref ObNodes obnodes, Statement s)
             case STMT.Mixin:
             case STMT.Peel:
             case STMT.Synchronized:
+            case STMT.Unpack:
                 debug printf("s: %s\n", toChars(s));
                 assert(0);              // should have been rewritten
         }

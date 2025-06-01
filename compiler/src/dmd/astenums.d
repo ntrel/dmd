@@ -389,6 +389,7 @@ enum STMT : ubyte
     Label,
     Asm, InlineAsm, GccAsm,
     Import,
+    Unpack,
 }
 
 /**********************

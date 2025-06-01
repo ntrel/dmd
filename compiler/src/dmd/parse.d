@@ -1160,7 +1160,28 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         }
     }
 
-    AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true, bool isParameter = false)
+    AST.UnpackStatement parseUnpackStatement()
+    in
+    {
+        assert(token.value == TOK.leftParenthesis);
+    }
+    do
+    {
+        const unpackLoc = token.loc;
+        nextToken();
+        auto vars = new AST.Dsymbols();
+        while (token.value != TOK.rightParenthesis)
+        {
+            const loc = token.loc;
+            // TODO
+            nextToken();
+        }
+        check(TOK.assign, "unpack statement");
+        auto _init = parseAssignExp();
+        return new AST.UnpackStatement(unpackLoc, _init);
+    }
+
+    AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true, bool isStatement = false)
     in
     {
         assert(token.value == TOK.leftParenthesis);
@@ -1189,9 +1210,9 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             if (token.value == TOK.leftParenthesis && peekPastParen(&token).value != TOK.identifier)
             {
                 // recurse
-                vars.push(parseUnpackDeclaration(storage_class, false, isParameter));
+                vars.push(parseUnpackDeclaration(storage_class, false, isStatement));
             }
-            else if (storage_class == STC.none &&
+            else if (isStatement && storage_class == STC.none &&
                 !isDeclaration(&token, NeedDeclaratorId.must, TOK.reserved, null))
             {
                 // not `Type ident` so must be expression
@@ -1230,7 +1251,15 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 {
                     error("`auto ref` unpacked variables are not supported");
                 }
-                assert(t || storage_class != STC.none);
+                if (isStatement)
+                {
+                    assert(t || storage_class != STC.none);
+                }
+                else if (!t && storage_class == STC.none)
+                {
+                    error("unpacked variable `%s` needs a type or at least one storage class, did you mean `auto %s`?",
+                        i.toChars(), i.toChars());
+                }
                 vars.push(new AST.VarDeclaration(loc, t, i, null, storage_class)); // TODO: UDAs
             }
 
@@ -6095,15 +6124,9 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             if (token.value != TOK.leftParenthesis)
                 goto Lexp;
 
-            /* This may be the start of an UnpackDeclaration.
-             */
-            auto next = peek(&token);
-            auto nonLeft = next;
-            while (nonLeft.value == TOK.leftParenthesis)
-                nonLeft = peek(nonLeft);
-            if ((isVariableStorageClass(nonLeft.value) || isTupleNotation(&token)) &&
+            if (global.params.tuples && isTupleNotation(&token) &&
                 peekPastParen(&token).value == TOK.assign)
-                goto Ldeclaration;
+                parseUnpackStatement();
 
             goto Lexp;
 

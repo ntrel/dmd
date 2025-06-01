@@ -317,6 +317,7 @@ extern (C++) abstract class Statement : ASTNode
         inout(InlineAsmStatement)    isInlineAsmStatement()    { return stmt == STMT.InlineAsm    ? cast(typeof(return))this : null; }
         inout(GccAsmStatement)       isGccAsmStatement()       { return stmt == STMT.GccAsm       ? cast(typeof(return))this : null; }
         inout(ImportStatement)       isImportStatement()       { return stmt == STMT.Import       ? cast(typeof(return))this : null; }
+        inout(UnpackStatement)       isUnpackStatement()       { return stmt == STMT.Unpack       ? cast(typeof(return))this : null; }
     }
 }
 
@@ -1877,6 +1878,31 @@ extern (C++) final class ImportStatement : Statement
     }
 }
 
+/***********************************************************
+ * (x, y) = seq;
+ * (int x, auto y) = seq;
+ */
+extern (C++) final class UnpackStatement : Statement
+{
+    Expression _init;
+
+    extern (D) this(Loc loc, Expression _init) @safe
+    {
+        super(loc, STMT.Unpack);
+        this._init = _init;
+    }
+
+    override UnpackStatement syntaxCopy()
+    {
+        return new UnpackStatement(loc, _init ? _init.syntaxCopy() : null);
+    }
+
+    override void accept(Visitor v)
+    {
+        v.visit(this);
+    }
+}
+
 
 mixin template VisitStatement(Result)
 {
@@ -1928,6 +1954,7 @@ mixin template VisitStatement(Result)
             case STMT.InlineAsm:     mixin(visitStmtCase("InlineAsm"));
             case STMT.GccAsm:        mixin(visitStmtCase("GccAsm"));
             case STMT.Import:        mixin(visitStmtCase("Import"));
+            case STMT.Unpack:        mixin(visitStmtCase("Unpack"));
         }
     }
 }

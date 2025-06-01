@@ -301,6 +301,7 @@ void foreachExpAndVar(Statement s,
             case STMT.Mixin:
             case STMT.Peel:
             case STMT.Synchronized:
+            case STMT.Unpack:
                 assert(0);              // should have been rewritten
         }
     }
