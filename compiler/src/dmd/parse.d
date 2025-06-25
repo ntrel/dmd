@@ -1160,26 +1160,116 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         }
     }
 
-    //~ AST.UnpackStatement parseUnpackStatement()
-    //~ in
-    //~ {
-        //~ assert(token.value == TOK.leftParenthesis);
-    //~ }
-    //~ do
-    //~ {
-        //~ const unpackLoc = token.loc;
-        //~ nextToken();
-        //~ auto vars = new AST.Dsymbols();
-        //~ while (token.value != TOK.rightParenthesis)
-        //~ {
-            //~ const loc = token.loc;
-            //~ // TODO
-            //~ nextToken();
-        //~ }
-        //~ check(TOK.assign, "unpack statement");
-        //~ auto _init = parseAssignExp();
-        //~ return new AST.UnpackStatement(unpackLoc, _init);
-    //~ }
+    // lower declarations and assignments to an ExpStatement
+    AST.ExpStatement parseUnpackStatement()
+    in
+    {
+        assert(token.value == TOK.leftParenthesis);
+    }
+    do
+    {
+        const unpackLoc = token.loc;
+        bool hasComma = false;
+        nextToken();
+        AST.Expression e;
+        void push(AST.Expression exp)
+        {
+            if (e)
+                e = AST.Expression.combine(e, exp);
+            else
+                e = exp;
+        }
+        while (token.value != TOK.rightParenthesis)
+        {
+            const loc = token.loc;
+            auto link = linkage; // (ignored)
+            auto setAlignment = false;
+            AST.Expression ealign = null;
+            AST.Expressions* udas = null;
+            Loc linkloc = this.linkLoc; // (ignored)
+            STC storage_class;
+            parseStorageClasses(storage_class, link, setAlignment, ealign, udas, linkloc);
+
+            if (token.value == TOK.leftParenthesis && peekPastParen(&token).value != TOK.identifier)
+            {
+                // TODO call parseUnpackStatement if no STC
+                // recurse
+                auto d = parseUnpackDeclaration(storage_class, false,
+                    storage_class == STC.none);
+                push(new AST.DeclarationExp(loc, d));
+            }
+            else if (storage_class == STC.none &&
+                !isDeclaration(&token, NeedDeclaratorId.must, TOK.reserved, null))
+            {
+                // not `Type ident` so must be expression
+                push(parseAssignExp());
+            }
+            else
+            {
+                TOK tkv;
+                AST.Type t = null;
+                Identifier i = null;
+                if (token.value == TOK.identifier && ((tkv = peek(&token).value) == TOK.comma || tkv == TOK.rightParenthesis))
+                {
+                    i = token.ident;
+                    nextToken();
+                }
+                else
+                {
+                    t = parseBasicType();
+                    t = parseTypeSuffixes(t);
+
+                    if (t == AST.Type.terror)
+                        break;
+
+                    if (token.value != TOK.identifier)
+                    {
+                        error("expected identifier after type `%s` in unpack declaration",
+                            t.toChars());
+                        break;
+                    }
+                    i = token.ident;
+                    nextToken();
+                }
+                if (storage_class & STC.autoref)
+                {
+                    error("`auto ref` unpacked variables are not supported");
+                }
+                assert(t || storage_class != STC.none);
+                auto d = new AST.VarDeclaration(loc, t, i, null, storage_class); // TODO: UDAs
+                push(new AST.DeclarationExp(loc, d));
+            }
+
+            if (token.value == TOK.rightParenthesis)
+            {
+                break;
+            }
+            hasComma = true;
+            if (token.value != TOK.comma)
+            {
+                error("expected comma to separate unpack declarators");
+                break;
+            }
+            nextToken();
+        }
+        if (!hasComma)
+        {
+            error("need a trailing comma to unpack a single variable");
+        }
+        if (token.value != TOK.rightParenthesis)
+        {
+            error("expected ')' to close unpack declarators");
+        }
+        nextToken();
+        check(TOK.assign, "unpack statement");
+
+        // TODO alias this seq
+        auto tup = parseAssignExp();
+        import dmd.sideeffect: copyToTemp;
+        auto vd = copyToTemp(STC.none, "__tup", tup);
+        e = AST.Expression.combine(new AST.DeclarationExp(tup.loc, vd), e);
+        return new AST.ExpStatement(unpackLoc, e);
+    }
 
     AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true, bool isStatement = true)
     in
@@ -6127,11 +6217,12 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             if (global.params.tuples && isTupleNotation(&token) &&
                 peekPastParen(&token).value == TOK.assign)
             {
-                goto Ldeclaration;
+                //~ goto Ldeclaration;
                 //~ auto upd = parseUnpackDeclaration(STC.none, true, true);
                 //~ s = new AST.UnpackStatement(upd);
                 //~ s = new AST.DeclarationStatement
-                //~ break;
+                s = parseUnpackStatement();
+                break;
             }
             goto Lexp;
 
