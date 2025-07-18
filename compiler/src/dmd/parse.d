@@ -1160,7 +1160,6 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         }
     }
 
-    // lower declarations and assignments to an ExpStatement
     AST.ExpStatement parseUnpackStatement()
     in
     {
@@ -1171,14 +1170,8 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         const unpackLoc = token.loc;
         bool hasComma = false;
         nextToken();
-        AST.Expression e;
-        void push(AST.Expression exp)
-        {
-            if (e)
-                e = AST.Expression.combine(e, exp);
-            else
-                e = exp;
-        }
+        auto exps = new AST.Expressions;
+
         while (token.value != TOK.rightParenthesis)
         {
             const loc = token.loc;
@@ -1192,17 +1185,20 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
             if (token.value == TOK.leftParenthesis && peekPastParen(&token).value != TOK.identifier)
             {
-                // TODO call parseUnpackStatement if no STC
                 // recurse
+                if (loc.fileOffset() == token.loc.fileOffset())
+                {
+                    // TODO call parseUnpackStatement if no storage class
+                }
                 auto d = parseUnpackDeclaration(storage_class, false,
                     storage_class == STC.none);
-                push(new AST.DeclarationExp(loc, d));
+                exps.push(new AST.DeclarationExp(loc, d));
             }
             else if (storage_class == STC.none &&
                 !isDeclaration(&token, NeedDeclaratorId.must, TOK.reserved, null))
             {
                 // not `Type ident` so must be expression
-                push(parseAssignExp());
+                exps.push(parseAssignExp());
             }
             else
             {
@@ -1237,7 +1233,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 }
                 assert(t || storage_class != STC.none);
                 auto d = new AST.VarDeclaration(loc, t, i, null, storage_class); // TODO: UDAs
-                push(new AST.DeclarationExp(loc, d));
+                exps.push(new AST.DeclarationExp(loc, d));
             }
 
             if (token.value == TOK.rightParenthesis)
@@ -1263,11 +1259,8 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         nextToken();
         check(TOK.assign, "unpack statement");
 
-        // TODO alias this seq
-        auto tup = parseAssignExp();
-        import dmd.sideeffect: copyToTemp;
-        auto vd = copyToTemp(STC.none, "__tup", tup);
-        e = AST.Expression.combine(new AST.DeclarationExp(tup.loc, vd), e);
+        auto _init = parseAssignExp();
+        auto e = new AST.UnpackExp(unpackLoc, exps, _init);
         return new AST.ExpStatement(unpackLoc, e);
     }
 

@@ -13852,6 +13852,65 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
         e.type = Type.tstring;
         result = e.resolveLoc(e.loc, sc);
     }
+
+    // lower to declarations and assignments
+    // `(auto __tup = _init; components[...] = __tup[...])`
+    override void visit(UnpackExp ue)
+    {
+        //printf("UnpackExp::semantic()\n");
+        import dmd.expressionsem;
+
+        auto _init = ue._init.expressionSemantic(sc);
+        _init = resolveProperties(sc, _init);
+        if (_init.type.ty == Terror)
+            return setError();
+
+        auto tup = UnpackDeclaration.getTupleExp(sc, _init);
+
+        if (!tup)
+        {
+            error(ue.loc, "right hand side of unpack statement must resolve to a tuple or expression sequence, not `%s`",
+                _init.type.toChars());
+            return setError();
+        }
+        if (ue.components.length != tup.exps.length)
+        {
+            error(ue.loc, "incompatible number of components for unpack statement (`%d` vs. `%d`)",
+                cast(int)ue.components.length, cast(int)tup.exps.length);
+            return setError();
+        }
+        // get expression seq
+        auto exps = UnpackDeclaration.expandTupleExp(sc, tup, STC.none);
+        auto r = tup.e0; // __tup declaration if tup is struct
+
+        foreach (i, c; *ue.components)
+        {
+            auto exp = (*exps)[i];
+            if (auto de = c.isDeclarationExp())
+            {
+                if (auto vd = de.declaration.isVarDeclaration())
+                {
+                    vd._init = new ExpInitializer(exp.loc, exp);
+                }
+                else if (auto ud = de.declaration.isUnpackDeclaration())
+                {
+                    // TODO
+                }
+                else
+                {
+                    assert(0, "unexpected unpack declaration");
+                }
+                r = Expression.combine(r, de);
+            }
+            else
+            {
+                auto e = new AssignExp(c.loc, c, exp);
+                r = Expression.combine(r, e);
+            }
+        }
+        r.expressionSemantic(sc);
+        result = r;
+    }
 }
 
 /**********************************

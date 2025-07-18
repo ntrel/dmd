@@ -836,6 +836,55 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
         return true;
     }
 
+    static TupleExp getTupleExp(Scope* sc, Expression _init)
+    {
+        TupleExp tup = null;
+
+        import dmd.tokens : EXP;
+        if (_init.type.ty == Ttuple && _init.op == EXP.tuple)
+        {
+            tup = cast(TupleExp)_init;
+        }
+        else
+        {
+            import dmd.dsymbolsem : resolveAliasThis;
+            _init = resolveAliasThis(sc, _init);
+            if (_init.type.ty == Ttuple && _init.op == EXP.tuple)
+            {
+                tup = cast(TupleExp)_init;
+            }
+        }
+        return tup;
+    }
+
+    static Expressions* expandTupleExp(Scope* sc, TupleExp tup, STC storage_class)
+    {
+        import dmd.expressionsem;
+
+        Expressions* exps = null;
+        if (tup.isAliasThisTuple())
+        {
+            //assert(decl.length != 0);
+            import dmd.sideeffect: copyToTemp;
+            auto v = copyToTemp(storage_class, "__tup", tup);
+            import dmd.dsymbolsem : dsymbolSemantic;
+            v.dsymbolSemantic(sc);
+            auto ve = new VarExp(v.loc, v);
+            ve.type = tup.type;
+
+            exps = new Expressions();
+            exps.setDim(1);
+            (*exps)[0] = ve;
+            expandAliasThisTuples(exps, 0);
+        }
+        else
+        {
+            exps = tup.exps;
+            expandTuples(exps);
+        }
+        return exps;
+    }
+
     final void lower(Scope* sc)
     {
         if (lowered)
@@ -871,29 +920,13 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
             return fail();
         }
 
-        TupleExp tup = null;
-        auto tinit = _init.type;
-
-        import dmd.tokens: EXP;
-        if (_init.type.ty == Ttuple && _init.op == EXP.tuple)
-        {
-            tup = cast(TupleExp)_init;
-        }
-        else
-        {
-            import dmd.dsymbolsem : resolveAliasThis;
-            _init = resolveAliasThis(sc, _init);
-            if (_init.type.ty == Ttuple && _init.op == EXP.tuple)
-            {
-                tup = cast(TupleExp)_init;
-            }
-        }
+        TupleExp tup = getTupleExp(sc, _init);
 
         static import dmd.errors;
         if (!tup)
         {
             dmd.errors.error(loc, "right hand side of unpack declaration must resolve to a tuple or expression sequence, not `%s`",
-                tinit.toChars());
+                _init.type.toChars());
             return fail();
         }
         if (decl.length != tup.exps.length)
@@ -905,27 +938,7 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
         if (!propagateStorageClasses())
             return fail();
 
-        Expressions* exps = null;
-        if (tup.isAliasThisTuple())
-        {
-            assert(decl.length != 0);
-            import dmd.sideeffect: copyToTemp;
-            auto v = copyToTemp(storage_class, "__tup", tup);
-            import dmd.dsymbolsem : dsymbolSemantic;
-            v.dsymbolSemantic(sc);
-            auto ve = new VarExp(loc, v);
-            ve.type = tup.type;
-
-            exps = new Expressions();
-            exps.setDim(1);
-            (*exps)[0] = ve;
-            expandAliasThisTuples(exps, 0);
-        }
-        else
-        {
-            exps = tup.exps;
-            expandTuples(exps);
-        }
+        Expressions* exps = expandTupleExp(sc, tup, storage_class);
         assert(exps.length == decl.length);
 
         foreach (i, d; *decl)

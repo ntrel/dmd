@@ -2836,6 +2836,34 @@ extern (C++) final class DeclarationExp : Expression
     }
 }
 
+/**
+ * `(x, auto y) = expressionSeq`
+ */
+extern (C++) final class UnpackExp : Expression
+{
+    // some can be DeclarationExp
+    Expressions* components;
+    Expression _init;
+
+    /// rhs = RHS seq/tuple expression
+    extern (D) this(Loc loc, Expressions* components, Expression _init) @safe
+    {
+        super(loc, EXP.unpack);
+        this.components = components;
+        this._init = _init;
+    }
+
+    override UnpackExp syntaxCopy()
+    {
+        return new UnpackExp(loc, arraySyntaxCopy(components), _init.syntaxCopy());
+    }
+
+    override void accept(Visitor v)
+    {
+        v.visit(this);
+    }
+}
+
 /***********************************************************
  * typeid(int)
  */
