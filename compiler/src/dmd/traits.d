@@ -2245,40 +2245,23 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         scx.ignoresymbolvisibility = true;
         scope (exit) scx.pop();
 
-        // Arguments are VoidInitExp-ressions created from provided types.
-        auto args_types = (*e.args)[1 .. dim];
-        auto arguments = new Expressions(args_types.length);
-        foreach (idx, it; args_types)
+        auto objs = (*e.args)[1 .. dim];
+        auto args = new Expressions(objs.length);
+        foreach (i, a; objs)
         {
-            auto at = isType(it);
-            if (at is null)
+            auto ei = isExpression(a);
+            if (!ei)
             {
-                error(e.loc, "argument %llu is not a type but '%s'.", idx + 1, it.toChars);
+                error(e.loc, "argument %llu (`%s`) is not an expression", i + 1, a.toChars);
                 return ErrorExp.get();
             }
-
-            auto vd = VarDeclaration.create(e.loc, at, Identifier.generateAnonymousId(""), null);
-            (*arguments)[idx] = new VoidInitExp(vd);
+            (*args)[i] = ei;
         }
-        ArgumentList argumentList = ArgumentList(arguments, null);
-
+        ArgumentList argumentList = ArgumentList(args, null);
+        // does ft!Args(args) work?
         auto resolvedFd = resolveFuncCall(e.loc, scx, sym, null, null, argumentList, FuncResolveFlag.quiet);
+        // TODO number of overloads matched
         return new IntegerExp(resolvedFd !is null);
-
-        //~ if (resolvedFd)
-        //~ {
-            //~ auto fa = new FuncAliasDeclaration(resolvedFd.ident, resolvedFd, false);
-            //~ fa.visibility = resolvedFd.visibility;
-            //~ auto sym_ex = new DsymbolExp(Loc.initial, fa, false);
-
-            //~ return expressionSemantic(sym_ex, scx);
-        //~ }
-
-        //~ // error(e.loc, "no match found %s", o.toChars());
-        //~ // NOTE: o.toChars() returns one the overloads and the error message feels misleading.
-        //~ // TODO: Add the name of the function
-        //~ error(e.loc, "no match found");
-        //~ return ErrorExp.get();
     }
 
     /* Can't find the identifier. Try a spell check for a better error message
