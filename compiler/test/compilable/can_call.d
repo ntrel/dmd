@@ -35,6 +35,7 @@ static assert(!__traits(canCall, h, 1));
 void j(T)(T);
 static assert(!__traits(canCall, j));
 static assert(__traits(canCall, j, 1));
+static assert(__traits(canCall, j!int, 1));
 static assert(!__traits(canCall, j!int, ""));
 
 // lambda

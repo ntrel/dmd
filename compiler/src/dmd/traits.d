@@ -2254,9 +2254,8 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
             (*args)[i] = ei;
         }
         ArgumentList argumentList = ArgumentList(args, null);
-        // does ft!Args(args) work?
         auto resolvedFd = resolveFuncCall(e.loc, sc, sym, null, null, argumentList, FuncResolveFlag.quiet);
-        // TODO number of overloads matched
+        // TODO number of overloads matched?
         return new IntegerExp(resolvedFd !is null);
     }
 
