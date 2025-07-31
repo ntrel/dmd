@@ -2200,17 +2200,19 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
     {
         if (dim < 1)
         {
-            error(e.loc, "Not enough arguments, first argument must be a function");
+            error(e.loc, "not enough arguments to `%s`", e.toChars);
             return ErrorExp.get();
         }
 
         auto o = (*e.args)[0];
         Dsymbol sym = getDsymbol(o);
 
-        // FIX: Delegates and function pointers caused segfaults
+        // TODO Delegates and function pointers
         if (!sym)
         {
-            error(e.loc, "Unable to get symbol from first argument, has to be a function type.");
+            error(e.loc, "unable to get symbol from first argument `%s`",
+                o.toChars);
+            errorSupplemental(e.loc, "first argument must be a function or an eponymous template");
             return ErrorExp.get();
         }
 
@@ -2228,7 +2230,7 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
 
         if (tf is null && (td is null || td.onemember is null))
         {
-            error(e.loc, "First argument has to be a function or an eponymous template, not `%s`",
+            error(e.loc, "first argument must be a function or an eponymous template, not `%s`",
                 ex.toChars);
             return ErrorExp.get();
         }
