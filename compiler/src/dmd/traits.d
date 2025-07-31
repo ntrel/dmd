@@ -2239,11 +2239,11 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
 
         // NOTE: Copied from getOverloads
         // ignore symbol visibility and disable access checks for these traits
-        Scope* scx = sc.push();
-        scx.copyFlagsFrom(sc);
-        scx.noAccessCheck = true;
-        scx.ignoresymbolvisibility = true;
-        scope (exit) scx.pop();
+        //~ Scope* scx = sc.push();
+        //~ scx.copyFlagsFrom(sc);
+        //~ scx.noAccessCheck = true;
+        //~ scx.ignoresymbolvisibility = true;
+        //~ scope (exit) scx.pop();
 
         auto objs = (*e.args)[1 .. dim];
         auto args = new Expressions(objs.length);
@@ -2259,7 +2259,7 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
         }
         ArgumentList argumentList = ArgumentList(args, null);
         // does ft!Args(args) work?
-        auto resolvedFd = resolveFuncCall(e.loc, scx, sym, null, null, argumentList, FuncResolveFlag.quiet);
+        auto resolvedFd = resolveFuncCall(e.loc, sc, sym, null, null, argumentList, FuncResolveFlag.quiet);
         // TODO number of overloads matched
         return new IntegerExp(resolvedFd !is null);
     }
