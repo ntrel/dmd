@@ -2224,16 +2224,12 @@ Expression semanticTraits(TraitsExp e, Scope* sc)
 
         FuncDeclaration fd;
         TypeFunction tf = toTypeFunction(o, fd);
-
-        // FIX: templated functions are not handled by `toTypeFunction`
-        // TODO: More robust check, TemplateDeclaration is too broad.
         TemplateDeclaration td = sym.isTemplateDeclaration();
 
-        const invalid = (tf is null) && (td is null);
-
-        if (invalid)
+        if (tf is null && (td is null || td.onemember is null))
         {
-            error(e.loc, "First argument has to be a function");
+            error(e.loc, "First argument has to be a function or an eponymous template, not `%s`",
+                ex.toChars);
             return ErrorExp.get();
         }
 
