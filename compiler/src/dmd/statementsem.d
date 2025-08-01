@@ -1477,6 +1477,16 @@ Statement statementSemanticVisit(Statement s, Scope* sc)
             return setError();
         }
 
+        if (fs.param.storageClass & STC.manifest)
+        {
+            error(fs.loc, "cannot declare `enum` loop variables for non-unrolled foreach");
+            return setError();
+        }
+        if (fs.param.storageClass & STC.alias_)
+        {
+            error(fs.loc, "cannot declare `alias` loop variables for non-unrolled foreach");
+            return setError();
+        }
         if (fs.param.type)
         {
             fs.param.type = fs.param.type.typeSemantic(loc, sc);
