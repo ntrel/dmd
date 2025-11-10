@@ -13879,7 +13879,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 cast(int)ue.components.length, cast(int)tup.exps.length);
             return setError();
         }
-        // get expression seq
+        // get elements of tup
         auto exps = UnpackDeclaration.expandTupleExp(sc, tup, STC.none);
         auto r = tup.e0; // __tup declaration if tup is struct
 
@@ -13894,7 +13894,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 }
                 else if (auto ud = de.declaration.isUnpackDeclaration())
                 {
-                    // TODO
+                    ud._init = exp;
                 }
                 else
                 {

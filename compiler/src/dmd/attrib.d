@@ -816,7 +816,6 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
             {
                 assert(0);
             }
-            import dmd.errors;
             if (d_storage_class & STC.static_ && !(storage_class & STC.static_))
             {
                 dmd.errors.error(loc, "cannot specify `static` for individual components of an unpack declaration");
@@ -864,7 +863,6 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
         Expressions* exps = null;
         if (tup.isAliasThisTuple())
         {
-            //assert(decl.length != 0);
             import dmd.sideeffect: copyToTemp;
             auto v = copyToTemp(storage_class, "__tup", tup);
             import dmd.dsymbolsem : dsymbolSemantic;
@@ -938,6 +936,9 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
         if (!propagateStorageClasses())
             return fail();
 
+        // if there's an `alias this` the length can't be zero
+        // see: https://github.com/dlang/dmd/issues/20842
+        assert(_init is tup || decl.length != 0);
         Expressions* exps = expandTupleExp(sc, tup, storage_class);
         assert(exps.length == decl.length);
 
@@ -955,6 +956,7 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
             }
             else if (auto dse = d.isExpressionDsymbol())
             {
+                // TODO remove
                 auto id = Identifier.generateId("__assign");
                 auto ae = new AssignExp(dse.loc, dse.exp, exp);
                 (*decl)[i] = new VarDeclaration(dse.loc, dse.exp.type, id,
