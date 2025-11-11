@@ -770,7 +770,6 @@ extern (C++) final class UserAttributeDeclaration : AttribDeclaration
  * Unpack declarations look like, e.g.:
  * auto (a, b) = init;
  * (int a, string b) = init;
- * (expr,) = init;
  */
 extern (C++) final class UnpackDeclaration : AttribDeclaration
 {
@@ -806,11 +805,6 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
                 if (!up.propagateStorageClasses())
                     return false;
                 d_storage_class = up.storage_class;
-            }
-            else if (d.isExpressionDsymbol())
-            {
-                assert(d_storage_class == STC.none);
-                return true;
             }
             else
             {
@@ -953,14 +947,6 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
             {
                 assert (!var._init);
                 var._init = new ExpInitializer(exp.loc, exp);
-            }
-            else if (auto dse = d.isExpressionDsymbol())
-            {
-                // TODO remove
-                auto id = Identifier.generateId("__assign");
-                auto ae = new AssignExp(dse.loc, dse.exp, exp);
-                (*decl)[i] = new VarDeclaration(dse.loc, dse.exp.type, id,
-                    new ExpInitializer(dse.loc, ae));
             }
             else if (auto unp = d.isUnpackDeclaration())
             {

@@ -1193,8 +1193,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 }
                 else
                 {
-                    auto d = parseUnpackDeclaration(storage_class, false,
-                        storage_class == STC.none);
+                    auto d = parseUnpackDeclaration(storage_class, false);
                     exps.push(new AST.DeclarationExp(loc, d));
                 }
             }
@@ -1271,7 +1270,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         return new AST.UnpackExp(unpackLoc, exps, _init);
     }
 
-    AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true, bool isStatement = true)
+    AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true, bool isParameter = false)
     in
     {
         assert(token.value == TOK.leftParenthesis);
@@ -1300,15 +1299,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             if (token.value == TOK.leftParenthesis && peekPastParen(&token).value != TOK.identifier)
             {
                 // recurse
-                vars.push(parseUnpackDeclaration(storage_class, false, isStatement));
-            }
-            else if (isStatement && storage_class == STC.none &&
-                !isDeclaration(&token, NeedDeclaratorId.must, TOK.reserved, null))
-            {
-                // not `Type ident` so must be expression
-                import dmd.dsymbol;
-                auto e = parseAssignExp();
-                vars.push(new ExpressionDsymbol(e));
+                vars.push(parseUnpackDeclaration(storage_class, false, isParameter));
             }
             else
             {
@@ -1341,11 +1332,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 {
                     error("`auto ref` unpacked variables are not supported");
                 }
-                if (isStatement)
-                {
-                    assert(t || storage_class != STC.none);
-                }
-                else if (!t && storage_class == STC.none)
+                if (!t && storage_class == STC.none)
                 {
                     error("unpacked variable `%s` needs a type or at least one storage class, did you mean `auto %s`?",
                         i.toChars(), i.toChars());
