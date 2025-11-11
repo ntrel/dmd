@@ -1160,7 +1160,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         }
     }
 
-    AST.ExpStatement parseUnpackStatement()
+    AST.UnpackExp parseUnpackExp(bool parseInit = true)
     in
     {
         assert(token.value == TOK.leftParenthesis);
@@ -1188,11 +1188,15 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 // recurse
                 if (loc.fileOffset() == token.loc.fileOffset())
                 {
-                    // TODO call parseUnpackStatement if no storage class
+                    auto ue = parseUnpackExp(false);
+                    exps.push(ue);
                 }
-                auto d = parseUnpackDeclaration(storage_class, false,
-                    storage_class == STC.none);
-                exps.push(new AST.DeclarationExp(loc, d));
+                else
+                {
+                    auto d = parseUnpackDeclaration(storage_class, false,
+                        storage_class == STC.none);
+                    exps.push(new AST.DeclarationExp(loc, d));
+                }
             }
             else if (storage_class == STC.none &&
                 !isDeclaration(&token, NeedDeclaratorId.must, TOK.reserved, null))
@@ -1257,11 +1261,14 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             error("expected ')' to close unpack declarators");
         }
         nextToken();
-        check(TOK.assign, "unpack statement");
 
-        auto _init = parseAssignExp();
-        auto e = new AST.UnpackExp(unpackLoc, exps, _init);
-        return new AST.ExpStatement(unpackLoc, e);
+        AST.Expression _init;
+        if (parseInit)
+        {
+            check(TOK.assign, "unpack statement");
+            _init = parseAssignExp();
+        }
+        return new AST.UnpackExp(unpackLoc, exps, _init);
     }
 
     AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true, bool isStatement = true)
@@ -6210,11 +6217,8 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             if (global.params.tuples && isTupleNotation(&token) &&
                 peekPastParen(&token).value == TOK.assign)
             {
-                //~ goto Ldeclaration;
-                //~ auto upd = parseUnpackDeclaration(STC.none, true, true);
-                //~ s = new AST.UnpackStatement(upd);
-                //~ s = new AST.DeclarationStatement
-                s = parseUnpackStatement();
+                auto ue = parseUnpackExp();
+                s = new AST.ExpStatement(ue.loc, ue);
                 break;
             }
             goto Lexp;

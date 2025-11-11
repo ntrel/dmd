@@ -13854,7 +13854,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
     }
 
     // lower to declarations and assignments
-    // `(auto __tup = _init; components[...] = __tup[...])`
+    // E.g. `(auto __tup = _init; auto x = __tup[0], y = __tup[1])`
     override void visit(UnpackExp ue)
     {
         //printf("UnpackExp::semantic()\n");
@@ -13901,6 +13901,11 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                     assert(0, "unexpected unpack declaration");
                 }
                 r = Expression.combine(r, de);
+            }
+            else if (auto inner = c.isUnpackExp())
+            {
+                inner._init = exp;
+                r = Expression.combine(r, inner);
             }
             else
             {
