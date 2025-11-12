@@ -13885,19 +13885,35 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
         foreach (i, c; *ue.components)
         {
             auto exp = (*exps)[i];
+
             if (auto de = c.isDeclarationExp())
             {
-                if (auto vd = de.declaration.isVarDeclaration())
+                auto sym = de.declaration;
+                STC stc;
+
+                if (auto vd = sym.isVarDeclaration())
                 {
+                    stc = vd.storage_class;
                     vd._init = new ExpInitializer(exp.loc, exp);
                 }
-                else if (auto ud = de.declaration.isUnpackDeclaration())
+                else if (auto ud = sym.isUnpackDeclaration())
                 {
+                    stc = ud.storage_class;
                     ud._init = exp;
                 }
                 else
                 {
                     assert(0, "unexpected unpack component");
+                }
+                if (stc & STC.static_)
+                {
+                    error(sym.loc, "cannot specify `static` for unpack statement components");
+                    return setError();
+                }
+                if (stc & STC.manifest)
+                {
+                    error(sym.loc, "cannot specify `enum` for unpack statement components");
+                    return setError();
                 }
                 r = Expression.combine(r, de);
             }
