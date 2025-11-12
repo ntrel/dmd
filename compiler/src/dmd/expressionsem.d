@@ -13854,7 +13854,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
     }
 
     // lower to declarations and assignments
-    // E.g. `(auto __tup = _init; auto x = __tup[0], y = __tup[1])`
+    // E.g. `auto __tup = _init; auto x = __tup[0], y = __tup[1]`
     override void visit(UnpackExp ue)
     {
         //printf("UnpackExp::semantic()\n");
@@ -13866,7 +13866,6 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
             return setError();
 
         auto tup = UnpackDeclaration.getTupleExp(sc, _init);
-
         if (!tup)
         {
             error(ue.loc, "right hand side of unpack statement must resolve to a tuple or expression sequence, not `%s`",

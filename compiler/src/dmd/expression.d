@@ -2839,6 +2839,8 @@ extern (C++) final class DeclarationExp : Expression
 
 /**
  * `(x, auto y) = expressionSeq`
+ *
+ * Note: Not allowed as a general expression because it can introduce variable declarations.
  */
 extern (C++) final class UnpackExp : Expression
 {
