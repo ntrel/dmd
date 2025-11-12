@@ -10197,6 +10197,7 @@ immutable PREC[EXP.max + 1] precedence =
     EXP.void_ : PREC.primary,
     EXP.vectorArray : PREC.primary,
     EXP._Generic : PREC.primary,
+    EXP.unpack : PREC.primary,
 
     // post
     EXP.dotTemplateInstance : PREC.primary,
