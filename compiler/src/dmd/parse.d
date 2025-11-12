@@ -1223,7 +1223,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
 
                     if (token.value != TOK.identifier)
                     {
-                        error("expected identifier after type `%s` in unpack declaration",
+                        error("expected identifier after type `%s` in unpack component",
                             t.toChars());
                         break;
                     }
@@ -1246,7 +1246,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             hasComma = true;
             if (token.value != TOK.comma)
             {
-                error("expected comma to separate unpack declarators");
+                error("expected comma to separate unpack components");
                 break;
             }
             nextToken();
@@ -1257,7 +1257,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         }
         if (token.value != TOK.rightParenthesis)
         {
-            error("expected ')' to close unpack declarators");
+            error("expected ')' to close unpack components");
         }
         nextToken();
 

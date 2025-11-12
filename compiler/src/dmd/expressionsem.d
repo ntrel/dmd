@@ -13897,7 +13897,7 @@ private extern (C++) final class ExpressionSemanticVisitor : Visitor
                 }
                 else
                 {
-                    assert(0, "unexpected unpack declaration");
+                    assert(0, "unexpected unpack component");
                 }
                 r = Expression.combine(r, de);
             }
