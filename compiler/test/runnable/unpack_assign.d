@@ -11,10 +11,12 @@ auto tuple(T...)(T args) => Tuple!T(args);
 
 void main()
 {
-    string b;
-    (int a, b) = tuple(1, "2");
-    assert(a == 1);
-    assert(b == "2");
+    string[1] b;
+    auto t = tuple(1, "2");
+    (ref a, b[0]) = t;
+    a++;
+    assert(t[0] == 2);
+    assert(b[0] == "2");
 
     // nested UnpackExp
     string d;
@@ -27,7 +29,8 @@ void main()
 
     // nested UnpackDeclaration
     int i;
-    (auto (j,), i) = tuple(tuple("5"), 1);
+    ref get() => i;
+    (auto (j,), get) = tuple(tuple("5"), 1);
     assert(j == "5");
-    assert(i == 1);
+    assert(get == 1);
 }
