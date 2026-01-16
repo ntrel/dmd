@@ -3915,6 +3915,7 @@ private void typeToBuffer(Type t, const Identifier ident, ref OutBuffer buf, ref
     }
 }
 
+// print t without certain modifiers
 private void visitWithMask(Type t, ubyte modMask, ref OutBuffer buf, ref HdrGenState hgs)
 {
     // Tuples and functions don't use the type constructor syntax
@@ -4371,7 +4372,7 @@ private void typeToBufferx(Type t, ref OutBuffer buf, ref HdrGenState hgs)
     {
         visitWithMask(t.next, t.mod, buf, hgs);
         buf.put('[');
-        visitWithMask(t.index, 0, buf, hgs);
+        visitWithMask(t.index, t.mod, buf, hgs);
         buf.put(']');
     }
 

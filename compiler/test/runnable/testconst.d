@@ -3703,6 +3703,25 @@ void test12403()
 }
 
 /************************************/
+// https://github.com/dlang/dmd/issues/22182
+
+void test22182()
+{
+    static if (is(const int[int] : V[K], V, K)) {}
+    static assert(is(K == const int));
+    static assert(is(V == const int));
+    // key const is redundant when AA is const
+    static assert(is(V[K] == const int[int]));
+
+    alias AA = const(int[int]);
+    static assert(is(AA == const int[int]));
+    AA aa;
+    static assert(is(typeof(cast() aa) == int[int]));
+    const int[int] bb = aa;
+    V[K] cc = aa;
+}
+
+/************************************/
 // https://issues.dlang.org/show_bug.cgi?id=13011
 
 void test13011()

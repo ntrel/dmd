@@ -948,6 +948,18 @@ Type makeWildConst(Type _this)
             else
                 _t.next = tn.next.wildConstOf();
         }
+        if (auto taa = _this.isTypeAArray())
+        {
+            //printf("TypeNext::makeWildConst() %s\n", toChars());
+            auto _taa = cast(TypeAArray) _t;
+            if (taa.index.ty != Tfunction && !taa.index.isImmutable())
+            {
+                if (taa.index.isShared())
+                    _taa.index = taa.index.sharedWildConstOf();
+                else
+                    _taa.index = taa.index.wildConstOf();
+            }
+        }
         //printf("TypeNext::makeWildConst() returns %p, %s\n", t, t.toChars());
         return _t;
     }
@@ -1079,6 +1091,12 @@ Type makeMutable(Type _this)
         {
             _t.next = tn.next.mutableOf();
         }
+        else if (tn.ty == Taarray)
+        {
+            auto _taa = cast(TypeAArray)_t;
+            _taa.index = _taa.index.mutableOf();
+            _t.next = tn.next.mutableOf();
+        }
         //printf("TypeNext::makeMutable() returns %p, %s\n", t, t.toChars());
         return _t;
     }
@@ -1126,7 +1144,31 @@ Type makeConst(Type _this)
         //printf("TypeNext::makeConst() returns %p, %s\n", t, t.toChars());
         return t;
     }
+    static Type aaMakeConst(TypeAArray _this)
+    {
+        auto t = cast(TypeAArray)typeNextMakeConst(_this);
+        if (_this.index.ty != Tfunction && !_this.index.isImmutable())
+        {
+            if (_this.index.isShared())
+            {
+                if (_this.index.isWild())
+                    t.index = _this.index.sharedWildConstOf();
+                else
+                    t.index = _this.index.sharedConstOf();
+            }
+            else
+            {
+                if (_this.index.isWild())
+                    t.index = _this.index.wildConstOf();
+                else
+                    t.index = _this.index.constOf();
+            }
+        }
+        return t;
+    }
 
+    if (auto taa = _this.isTypeAArray())
+        return aaMakeConst(taa);
     if (auto tn = _this.isTypeNext())
         return typeNextMakeConst(tn);
 
@@ -3467,6 +3509,13 @@ Type typeSemantic(Type type, Loc loc, Scope* sc)
         if (sc)
             sc.setNoFree();
 
+        // propagate type qual
+        // change inout to const because:
+        // druntime/import/core/internal/newaa.d(109): Error: variable `core.internal.newaa.Entry!(inout(string), string).Entry.key` - only parameters or stack-based variables can be `inout`
+        ubyte mod = (mtype.mod & MODFlags.wild) ?
+            (mtype.mod & ~MODFlags.wild) | MODFlags.const_ : mtype.mod;
+        mtype.index = mtype.index.addMod(mod);
+
         // Deal with the case where we thought the index was a type, but
         // in reality it was an expression.
         if (mtype.index.ty == Tident || mtype.index.ty == Tinstance || mtype.index.ty == Tsarray || mtype.index.ty == Ttypeof || mtype.index.ty == Treturn || mtype.index.ty == Tmixin)
@@ -3511,6 +3560,7 @@ Type typeSemantic(Type type, Loc loc, Scope* sc)
             mtype.index = mtype.index.typeSemantic(loc, sc);
         mtype.index = mtype.index.merge2();
 
+        // enforce tail const key type
         if (mtype.index.nextOf() && !mtype.index.nextOf().isImmutable())
         {
             mtype.index = mtype.index.constOf().mutableOf();
@@ -8779,9 +8829,7 @@ Type unqualify(Type type, uint m)
             else if (type.ty == Tsarray)
                 t = new TypeSArray(utn, (cast(TypeSArray)type).dim);
             else if (type.ty == Taarray)
-            {
-                t = new TypeAArray(utn, (cast(TypeAArray)type).index);
-            }
+                t = new TypeAArray(utn, (cast(TypeAArray)type).index.unqualify(m));
             else
                 assert(0);
 

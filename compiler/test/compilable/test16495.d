@@ -84,7 +84,7 @@ void names()
         static assert(__traits(fullyQualifiedName, typeof(aarray)) == xx ~ "[" ~ xx ~ "]");
 
         // qualified key for AA
-        static assert(__traits(fullyQualifiedName, typeof(qualAarray)) == "const(" ~ xx ~ "[const(" ~ xx ~ ")])");
+        static assert(__traits(fullyQualifiedName, typeof(qualAarray)) == "const(" ~ xx ~ "[" ~ xx ~ "])");
 
         // Qualified composed data types
         static assert(__traits(fullyQualifiedName, typeof(data)) == "shared(const(" ~ xx ~ "[string])[])");
