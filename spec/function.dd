@@ -1431,49 +1431,86 @@ $(H2 $(LNAME2 function-overloading, Function Overloading))
         for a function is the $(I worst) match level of each of its
         arguments.)
 
-        $(P Literals do not match $(CODE ref) or $(CODE out) parameters.)
-
-        $(P $(CODE scope) parameter storage class does not affect function overloading.)
+$(H3 $(LNAME2 partial-ordering, Partial Ordering))
 
         $(P If two or more functions have the same match level,
-        then $(LNAME2 partial-ordering, $(I partial ordering))
-        is used to disambiguate to find the best match.
+        then $(I partial ordering) is used to disambiguate to find the best match.
         Partial ordering finds the most specialized function.
         If neither function is more specialized than the other,
         then it is an ambiguity error.
         Partial ordering is determined for functions $(I f)
-        and $(I g) by taking the parameter types of $(I f),
-        constructing a list of arguments by taking the default values
-        of those types, and attempting to match them against $(I g).
-        If it succeeds, then $(I g) is at least as specialized
-        as $(I f).
-        For example:
-        )
+        and $(I g) by:)
+
+        - Taking the default values of the parameter types of $(I f),
+          constructing a list of arguments with those values,
+          and attempting to match the argument list against $(I g).
+        - If the matching succeeds, then $(I g) is at least as specialized
+          as $(I f).
+        - The process is then repeated, attempting to match
+          *g*'s parameters against *f*.
+        - If both attempts match, the call is ambiguous.
+
+        $(P For example:)
+
+$(SPEC_RUNNABLE_EXAMPLE_COMPILE
 ---
 class A { }
 class B : A { }
 class C : B { }
-void foo(A);
-void foo(B);
 
-void test()
+int foo(A) => 1;
+int foo(B) => 2;
+
+static assert(foo(new A) == 1); // exact match, calls foo(A)
+static assert(foo(new B) == 2); // exact match, calls foo(B)
+static assert(foo(new C) == 2); // calls foo(B) due to partial ordering
+---
+)
+        $(P For the last call, both `foo(A)` and `foo(B)` match the argument
+        `new C`, each with implicit conversions (level 2).
+        Applying partial ordering rules,
+        `foo(B)` cannot be called with an `A`, and `foo(A)` can be called
+        with a `B`. Therefore, `foo(B)` is more specialized, and it is selected.
+        )
+
+$(H3 $(LNAME2 parameter-kinds, Parameter Kinds))
+
+        $(P Rvalues do not match $(RELATIVE_LINK2 ref-params, $(CODE ref) or $(CODE out)
+        parameters). When an lvalue argument matches an overload's `ref` or `out`
+        parameter and another overload's parameter without `ref` or `out`, the former
+        overload is the most specialized:)
+
+$(SPEC_RUNNABLE_EXAMPLE_RUN
+---
+int f(int) => 1;
+int f(ref int) => 2;
+
+void main()
 {
-    C c;
-    /* Both foo(A) and foo(B) match with implicit conversions (level 2).
-     * Applying partial ordering rules,
-     * foo(B) cannot be called with an A, and foo(A) can be called
-     * with a B. Therefore, foo(B) is more specialized, and is selected.
-     */
-    foo(c); // calls foo(B)
+    int i;
+    assert(f(0) == 1);
+    assert(f(i) == 2);
 }
 ---
-        $(P A function with a variadic argument is considered less
+)
+        $(P A function with a $(RELATIVE_LINK2 variadic, variadic) parameter is considered less
         specialized than a function without.
         )
 
-        $(P A static member function can be overloaded with a member
-        function. The struct, class
-        or union of the static member function is inferred from the
+$(SPEC_RUNNABLE_EXAMPLE_COMPILE
+---
+int f(int) => 1;
+int f(int[] a...) => 2;
+static assert(f(0) == 1);
+---
+)
+
+        $(NOTE The `lazy` and `scope` parameter storage classes do not affect function overloading.)
+
+$(H3 $(LNAME2 static-overloads, Static Overloads))
+
+        $(P A static member function can be overloaded with a non-static member
+        function. The aggregate type for the static member function is inferred from the
         type of the `this` argument.)
 
         ---
