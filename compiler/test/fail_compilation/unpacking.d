@@ -14,7 +14,7 @@ fail_compilation/unpacking.d(39,16): Error: `auto ref` unpacked variables are no
 fail_compilation/unpacking.d(40,25): Error: unpacking `auto ref` parameters is not supported
 fail_compilation/unpacking.d(41,21): Error: unpacking `lazy` parameters is not supported
 fail_compilation/unpacking.d(41,34): Error: unpacking `out` parameters is not supported
-fail_compilation/unpacking.d(43,23): Error: `;` expected after tuple pattern, not `,`
+fail_compilation/unpacking.d(43,23): Error: `;` expected after initializer, not `,`
 ---
 */
 

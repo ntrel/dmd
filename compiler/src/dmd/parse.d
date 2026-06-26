@@ -1308,7 +1308,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 if (!storageClass && token.value == TOK.comma)
                 {
                     // prevent `(T x,) = tup, i = 1;`
-                    error("`;` expected after tuple pattern, not `,`");
+                    error("`;` expected after initializer, not `,`");
                 }
             }
             else
