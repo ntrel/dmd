@@ -1182,7 +1182,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
         }
     }
 
-    AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true, bool isParameter = false)
+    AST.UnpackDeclaration parseUnpackDeclaration(STC g_storage_class, bool parseInitializer = true)
     in
     {
         assert(token.value == TOK.leftParenthesis);
@@ -1211,7 +1211,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
             if (token.value == TOK.leftParenthesis)
             {
                 // recurse
-                vars.push(parseUnpackDeclaration(storage_class, false, isParameter));
+                vars.push(parseUnpackDeclaration(storage_class, false));
             }
             else
             {
@@ -3258,7 +3258,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                                     {
                                         error("unpacking `out` parameters is not supported");
                                     }
-                                    unpack = parseUnpackDeclaration(storageClass & ~STC.lazy_ & ~STC.autoref & ~STC.out_ | STC.temp | STC.ctfe, false, true);
+                                    unpack = parseUnpackDeclaration(storageClass & ~STC.lazy_ & ~STC.autoref & ~STC.out_ | STC.temp | STC.ctfe, false);
                                     ai = Identifier.generateId("__unpack");
                                     goto LskipType;
                                 }
@@ -5958,7 +5958,7 @@ class Parser(AST, Lexer = dmd.lexer.Lexer) : Lexer
                 TOK after = peekPastParen(&token).value;
                 if (after == TOK.comma || after == TOK.semicolon)
                 {
-                    unpack = parseUnpackDeclaration(storageClass | STC.temp | STC.ctfe, false, true);
+                    unpack = parseUnpackDeclaration(storageClass | STC.temp | STC.ctfe, false);
                     ai = Identifier.generateId("__unpack");
                     goto Larg;
                 }
