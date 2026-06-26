@@ -2,7 +2,7 @@
 REQUIRED_ARGS: -preview=tuples
 TEST_OUTPUT:
 ---
-fail_compilation/unpack_semantic.d(18): Error: right hand side of unpack declaration must resolve to a tuple or expression sequence, not `int[]`
+fail_compilation/unpack_semantic.d(18): Error: right hand side of unpack declaration must resolve to a tuple or value sequence, not `int[]`
 fail_compilation/unpack_semantic.d(19): Error: incompatible number of components for unpack declaration (`2` vs. `3`)
 fail_compilation/unpack_semantic.d(22): Error: cannot specify `static` for individual components of an unpack declaration
 fail_compilation/unpack_semantic.d(23): Error: cannot specify `enum` for individual components of an unpack declaration

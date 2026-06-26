@@ -878,7 +878,7 @@ extern (C++) final class UnpackDeclaration : AttribDeclaration
 
         if (!tup)
         {
-            dmd.errors.error(loc, "right hand side of unpack declaration must resolve to a tuple or expression sequence, not `%s`",
+            dmd.errors.error(loc, "right hand side of unpack declaration must resolve to a tuple or value sequence, not `%s`",
                 tinit.toChars());
             return fail();
         }
