@@ -334,6 +334,7 @@ enum EXP : ubyte
     thrownException,
     delegatePointer,
     delegateFunctionPointer,
+    unpack,
 
     // Operators
     lessThan,

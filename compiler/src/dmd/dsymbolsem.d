@@ -9489,6 +9489,54 @@ bool propagateStorageClasses(UnpackDeclaration upd)
     return true;
 }
 
+TupleExp getTupleExp(Scope* sc, Expression _init)
+{
+    TupleExp tup = null;
+
+    import dmd.tokens : EXP;
+    if (_init.type.ty == Ttuple && _init.op == EXP.tuple)
+    {
+        tup = cast(TupleExp)_init;
+    }
+    else
+    {
+        import dmd.dsymbolsem : resolveAliasThis;
+        _init = resolveAliasThis(sc, _init);
+        if (_init.type.ty == Ttuple && _init.op == EXP.tuple)
+        {
+            tup = cast(TupleExp)_init;
+        }
+    }
+    return tup;
+}
+
+Expressions* expandTupleExp(Scope* sc, TupleExp tup, STC storage_class)
+{
+    import dmd.expressionsem;
+
+    Expressions* exps = null;
+    if (tup.isAliasThisTuple())
+    {
+        import dmd.sideeffect: copyToTemp;
+        auto v = copyToTemp(storage_class, "__tup", tup);
+        import dmd.dsymbolsem : dsymbolSemantic;
+        v.dsymbolSemantic(sc);
+        auto ve = new VarExp(v.loc, v);
+        ve.type = tup.type;
+
+        exps = new Expressions();
+        exps.setDim(1);
+        (*exps)[0] = ve;
+        expandAliasThisTuples(exps, 0);
+    }
+    else
+    {
+        exps = tup.exps;
+        expandTuples(exps);
+    }
+    return exps;
+}
+
 private void lowerUnpack(UnpackDeclaration upd, Scope* sc)
 {
     if (upd.lowered)
@@ -9529,27 +9577,12 @@ private void lowerUnpack(UnpackDeclaration upd, Scope* sc)
         return fail();
     }
 
-    TupleExp tup = null;
-    auto tinit = upd._init.type;
-
-    if (upd._init.type.isTypeTuple() && upd._init.isTupleExp())
-    {
-        tup = cast(TupleExp)upd._init;
-    }
-    else
-    {
-        import dmd.dsymbolsem : resolveAliasThis;
-        upd._init = resolveAliasThis(sc, upd._init);
-        if (upd._init.type.isTypeTuple() && upd._init.isTupleExp())
-        {
-            tup = cast(TupleExp)upd._init;
-        }
-    }
+    TupleExp tup = getTupleExp(sc, upd._init);
 
     if (!tup)
     {
         sc.eSink.error(upd.loc, "right hand side of unpack declaration must resolve to a tuple or expression sequence, not `%s`",
-            tinit.toChars());
+            upd._init.type.toChars());
         return fail();
     }
     if (upd.decl.length != tup.exps.length)
@@ -9561,27 +9594,7 @@ private void lowerUnpack(UnpackDeclaration upd, Scope* sc)
     if (!upd.propagateStorageClasses())
         return fail();
 
-    Expressions* exps = null;
-    if (tup.isAliasThisTuple())
-    {
-        assert(upd.decl.length != 0);
-        import dmd.sideeffect: copyToTemp;
-        auto v = copyToTemp(upd.storage_class, "__tup", tup);
-        import dmd.dsymbolsem : dsymbolSemantic;
-        v.dsymbolSemantic(sc);
-        auto ve = new VarExp(upd.loc, v);
-        ve.type = tup.type;
-
-        exps = new Expressions();
-        exps.setDim(1);
-        (*exps)[0] = ve;
-        expandAliasThisTuples(exps, 0);
-    }
-    else
-    {
-        exps = tup.exps;
-        expandTuples(exps);
-    }
+    Expressions* exps = expandTupleExp(sc, tup, upd.storage_class);
     assert(exps.length == upd.decl.length);
 
     foreach (i, d; *upd.decl)

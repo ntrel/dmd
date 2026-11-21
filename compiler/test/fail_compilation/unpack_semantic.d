@@ -12,7 +12,7 @@ fail_compilation/unpack_semantic.d(26): Error: cannot implicitly convert express
 
 alias Seq(A...) = A;
 
-void main()
+private
 {
     auto (a, b) = [1, 2];
     (int c, int d) = Seq!(3, 4, 5);
@@ -25,3 +25,7 @@ void main()
     (int p,) = Seq!3F;
     (int q, void* r) = Seq!(6, 7);
 }
+
+// OK before parens
+static (z, y) = Seq!(1, 2);
+enum (x, w) = Seq!("", null);

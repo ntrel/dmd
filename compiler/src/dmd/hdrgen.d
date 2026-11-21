@@ -3121,6 +3121,21 @@ private void expressionPrettyPrint(Expression e, ref OutBuffer buf, ref HdrGenSt
         buf.put(e.value.toChars());
     }
 
+    void visitUnpackExp(UnpackExp e)
+    {
+        buf.writeByte('(');
+        argsToBuffer(e.components, buf, hgs, null);
+        if (e.components.length == 1)
+            buf.writeByte(',');
+
+        buf.writeByte(')');
+        if (e._init)
+        {
+            buf.writestring(" = ");
+            expressionPrettyPrint(e._init, buf, hgs);
+        }
+    }
+
     if (e.rvalue)
         buf.put("__rvalue(");
 
@@ -3211,6 +3226,7 @@ private void expressionPrettyPrint(Expression e, ref OutBuffer buf, ref HdrGenSt
         case EXP.construct:     return visitConstructExp(e.isConstructExp());
         case EXP.equal:
         case EXP.notEqual:      return visitEqualExp(e.isEqualExp());
+        case EXP.unpack:        return visitUnpackExp(e.isUnpackExp());
     }
 }
 
@@ -4757,6 +4773,7 @@ string EXPtoString(EXP op)
         EXP.void_ : "void",
         EXP.vectorArray : "vectorarray",
         EXP._Generic : "_Generic",
+        EXP.unpack : "unpack",
 
         // post
         EXP.dotTemplateInstance : "dotti",
